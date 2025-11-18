@@ -3,24 +3,53 @@
 <head>
   <meta charset="UTF-8">
   <title>IBM Power Timeline</title>
+
+  <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
 
-  <style>
-    body {
-      background: #f5f7fa;
+  <!-- Tailwind Custom Configuration -->
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          borderRadius: {
+            '2xl': '1rem'
+          },
+          boxShadow: {
+            xl: '0 10px 25px rgba(0,0,0,0.15)'
+          },
+          colors: {
+            ibmBlue: '#1f4c79',
+            ibmIndigo: '#4f46e5'
+          },
+          gradientColorStops: {
+            yellow: '#facc15',
+            red: '#f87171',
+            purple: '#c084fc',
+            blue: '#1e3a8a',
+          }
+        }
+      }
     }
+  </script>
+
+  <style>
+    body { background: #f5f7fa; }
+
     .circle {
-      width: 80px;
-      height: 80px;
+      width: 90px;
+      height: 90px;
       border-radius: 50%;
       display: flex;
       align-items: center;
       justify-content: center;
-      color: white;
-      font-weight: bold;
       font-size: 0.75rem;
+      font-weight: bold;
+      color: white;
       text-align: center;
+      box-shadow: 0 8px 18px rgba(0,0,0,0.15);
     }
+
     .timeline-bar {
       height: 12px;
       background: linear-gradient(to right, #facc15, #fb923c, #c084fc, #1e3a8a);
@@ -29,6 +58,7 @@
       margin-bottom: 40px;
       position: relative;
     }
+
     .timeline-dot {
       width: 26px;
       height: 26px;
@@ -48,11 +78,11 @@
 
 <script>
 /* ---------------------------------------------------
-   FINAL STANDALONE IBM POWER TIMELINE APP
-   (React-free version — works directly on GitHub Pages)
+   FINAL FULL IBM POWER TIMELINE (React-free version)
 -----------------------------------------------------*/
 
 let step = 1;
+
 let form = {
   poDate: "",
   s1022: 0,
@@ -75,10 +105,10 @@ function addWeeks(date, weeks) {
   return addDays(date, weeks * 7);
 }
 
-function calcWeeks(count) {
-  const c = Number(count) || 0;
-  if (c === 0) return 0;
-  if (c <= 10) return 1;
+function calcWeeks(n) {
+  n = Number(n);
+  if (n === 0) return 0;
+  if (n <= 10) return 1;
   return 3;
 }
 
@@ -116,6 +146,9 @@ function fmt(d) {
 function render() {
   const app = document.getElementById("app");
 
+  /* -------------------------------
+     PAGE 1 — INPUT USER DATA
+  --------------------------------*/
   if (step === 1) {
     app.innerHTML = `
       <h1 class="text-3xl font-bold mb-6">IBM Power — Timeline</h1>
@@ -135,31 +168,37 @@ function render() {
           ["labHours", "Expert Lab Hours"],
           ["lpars", "LPAR Count"]
         ]
-          .map(
-            ([key, label]) => `
-          <div class="p-4 border rounded-lg bg-gray-50">
+        .map(([key, label]) => `
+          <div class="p-4 border rounded-2xl bg-gray-50 shadow">
             <div class="flex justify-between mb-2">
               <label class="font-medium">${label}</label>
               <span class="font-bold text-indigo-600">${form[key]}</span>
             </div>
-            <input type="range" min="0" max="50" step="1" id="${key}" value="${
-              form[key]
-            }" class="w-full">
+            <input
+              type="range"
+              min="0"
+              max="50"
+              step="1"
+              id="${key}"
+              value="${form[key]}"
+              class="w-full"
+            >
           </div>
-        `
-          )
-          .join("")}
+        `).join("")}
 
       </div>
 
       <div class="flex justify-end mt-8">
-        <button onclick="goNext()" class="px-6 py-2 bg-indigo-600 text-white rounded-md">
+        <button onclick="goNext()" class="px-6 py-2 bg-indigo-600 text-white rounded-md shadow">
           Generate Timeline
         </button>
       </div>
     `;
   }
 
+  /* -------------------------------
+     PAGE 2 — TIMELINE RESULT
+  --------------------------------*/
   if (step === 2) {
     app.innerHTML = `
       <h1 class="text-3xl font-bold mb-6">Timeline Result</h1>
@@ -178,15 +217,12 @@ function render() {
           ["Installation", fmt(timeline.install), "bg-purple-500"],
           ["End of Service", fmt(timeline.eos), "bg-blue-800"]
         ]
-          .map(
-            ([label, date, color]) => `
+        .map(([label, date, color]) => `
           <div>
             <div class="circle ${color} mx-auto">${date}</div>
             <p class="mt-3 font-semibold">${label}</p>
           </div>
-        `
-          )
-          .join("")}
+        `).join("")}
       </div>
 
       <div class="flex justify-between mt-10">
@@ -196,7 +232,8 @@ function render() {
     `;
   }
 
-  document.querySelectorAll("input[type=range], input[type=date]").forEach((el) => {
+  /* Re-attach event listeners */
+  document.querySelectorAll("input").forEach((el) => {
     el.addEventListener("input", (e) => {
       form[e.target.id] = e.target.value;
       render();
@@ -216,13 +253,21 @@ function goBack() {
 }
 
 function resetApp() {
+  form = {
+    poDate: "",
+    s1022: 0,
+    s1024: 0,
+    e1050: 0,
+    e1080: 0,
+    labHours: 0,
+    lpars: 0
+  };
   step = 1;
-  form = { poDate: "", s1022: 0, s1024: 0, e1050: 0, e1080: 0, labHours: 0, lpars: 0 };
-  timeline = null;
   render();
 }
 
 render();
 </script>
+
 </body>
 </html>
