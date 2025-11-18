@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>IBM Power Timeline</title>
+  <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50">
+<div id="root"></div>
+
+<script type="text/babel">
+
+function IBMWizard() {
+  const { useState } = React;
+  const [step, setStep] = useState(1);
+  const [form, setForm] = useState({
+    poDate: "",
+    s1022: 0,
+    s1024: 0,
+    e1050: 0,
+    e1080: 0,
+    labHours: 0,
+    lpars: 0,
+  });
+  const [timeline, setTimeline] = useState(null);
+
+  const handleChange = (e) => {
+    const { name, value, type } = e.target;
+    setForm((prev) => ({ ...prev, [name]: type === "number" || e.target.type === 'range' ? Number(value) : value }));
+  };
+
+  const addDays = (date, days) => { const d = new Date(date); d.setDate(d.getDate() + days); return d; };
+  const addWeeks = (date, weeks) => addDays(date, weeks * 7);
+  const calcWeeks = (count) => { const c = Number(count)||0; if(c===0)return 0; if(c<=10)return 1; return 3; };
+
+  const generateTimeline = () => {
+    if (!form.poDate) return;
+    const po = new Date(form.poDate);
+    const buildShip = addDays(po, 21);
+    let install = new Date(buildShip);
+    install = addWeeks(install, calcWeeks(form.s1022));
+    install = addWeeks(install, calcWeeks(form.s1024));
+    install = addWeeks(install, calcWeeks(form.e1050));
+    install = addWeeks(install, calcWeeks(form.e1080));
+    let eosBase = addDays(install, 61);
+    if (form.labHours > 1000) {
+      const extra = Math.floor((form.labHours - 1000) / 100);
+      eosBase = addDays(eosBase, extra * 10);
+    }
+    if (form.lpars > 130) {
+      const extra = Math.floor((form.lpars - 130) / 10);
+      eosBase = addDays(eosBase, extra * 5);
+    }
+    setTimeline({ po, buildShip, install, eos: eosBase });
+  };
+
+  const fmt = (d) => (d instanceof Date ? d.toLocaleDateString() : "");
+  const next = () => { generateTimeline(); setStep(3); };
+
+  return (
+    <div className="min-h-screen bg-gray-50 flex items-start justify-center p-8">
+      <div className="w-full max-w-5xl bg-white shadow-2xl rounded-2xl overflow-hidden">
+        <div className="bg-gradient-to-r from-blue-800 to-indigo-600 p-8 text-white">
+          <h1 className="text-3xl font-extrabold">IBM Power — Timeline</h1>
+        </div>
+
+        <div className="p-8">
+          {step === 1 && (
+            <div className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">PO Received Date</label>
+                  <input name="poDate" type="date" onChange={handleChange} value={form.poDate} className="mt-2 w-full p-3 border rounded-lg" />
+                </div>
+
+                <div><label className="block text-sm font-medium text-gray-700"># S1022/1122 — <span className="font-bold text-indigo-600">{form.s1022}</span></label>
+                <input name="s1022" type="range" min="0" max="50" step="1" value={form.s1022} onChange={handleChange} className="mt-3 w-full" /></div>
+
+                <div><label className="block text-sm font-medium text-gray-700"># S1024/1124 — <span className="font-bold text-indigo-600">{form.s1024}</span></label>
+                <input name="s1024" type="range" min="0" max="50" step="1" value={form.s1024} onChange={handleChange} className="mt-3 w-full" /></div>
+
+                <div><label className="block text-sm font-medium text-gray-700"># E1050/1150 — <span className="font-bold text-indigo-600">{form.e1050}</span></label>
+                <input name="e1050" type="range" min="0" max="50" step="1" value={form.e1050} onChange={handleChange} className="mt-3 w-full" /></div>
+
+                <div><label className="block text-sm font-medium text-gray-700"># E1080/1180 — <span className="font-bold text-indigo-600">{form.e1080}</span></label>
+                <input name="e1080" type="range" min="0" max="50" step="1" value={form.e1080} onChange={handleChange} className="mt-3 w-full" /></div>
+
+                <div><label className="block text-sm font-medium text-gray-700">Expert Lab Hours — <span className="font-bold text-indigo-600">{form.labHours}</span></label>
+                <input name="labHours" type="range" min="0" max="3000" step="50" value={form.labHours} onChange={handleChange} className="mt-3 w-full" /></div>
+
+                <div><label className="block text-sm font-medium text-gray-700">LPAR Count — <span className="font-bold text-indigo-600">{form.lpars}</span></label>
+                <input name="lpars" type="range" min="0" max="300" step="5" value={form.lpars} onChange={handleChange} className="mt-3 w-full" /></div>
+              </div>
+
+              <div className="flex justify-end">
+                <button onClick={next} className="px-6 py-2 bg-indigo-600 text-white rounded-md">Next</button>
+              </div>
+            </div>
+          )}
+
+          {step === 3 && timeline && (
+            <div className="space-y-6">
+              <h2 className="text-xl font-semibold">Timeline Result</h2>
+              <div className="relative my-8">
+                <div className="absolute top-1/2 left-0 w-full h-3 bg-gradient-to-r from-yellow-400 via-red-400 via-purple-500 to-blue-900 rounded-full"></div>
+
+                <div className="grid grid-cols-4 gap-8 relative z-10">
+                  {[
+                    { label: "PO Received", date: fmt(timeline.po), color: "from-yellow-300 to-yellow-500" },
+                    { label: "Build / Ship", date: fmt(timeline.buildShip), color: "from-orange-300 to-orange-600" },
+                    { label: "Installation", date: fmt(timeline.install), color: "from-purple-300 to-purple-600" },
+                    { label: "End of Service", date: fmt(timeline.eos), color: "from-blue-400 to-blue-900" }
+                  ].map((item, i) => (
+                    <div key={i} className="flex flex-col items-center text-center">
+                      <div className="w-28 h-28 rounded-full border-4 bg-white shadow-xl flex items-center justify-center text-sm font-semibold text-gray-800">
+                        <div className={`w-20 h-20 rounded-full bg-gradient-to-br ${item.color} flex items-center justify-center text-white`}>
+                          {item.date}
+                        </div>
+                      </div>
+                      <p className="mt-4 text-gray-700 font-semibold">{item.label}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="flex justify-between">
+                <button onClick={() => setStep(1)} className="px-6 py-2 border rounded-md">Back</button>
+                <button onClick={() => { setStep(1); setTimeline(null); }} className="px-6 py-2 border rounded-md">Start Over</button>
+              </div>
+            </div>
+          )}
+
+        </div>
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<IBMWizard />);
+
+</script>
+</body>
+</html>
