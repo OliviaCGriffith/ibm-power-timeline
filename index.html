@@ -1,37 +1,42 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>Timeline Result</title>
-
-  <!-- Tailwind CSS -->
+  <meta charset="UTF-8">
+  <title>IBM Power Timeline</title>
   <script src="https://cdn.tailwindcss.com"></script>
-
-  <!-- React & Babel -->
-  <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
-  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
-  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
   <style>
     body {
       background: #f5f7fa;
-      font-family: Arial, sans-serif;
+    }
+    .circle {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: bold;
+      font-size: 0.75rem;
+      text-align: center;
     }
     .timeline-bar {
       height: 12px;
-      background: linear-gradient(90deg, #1f4c79, #4fa3f7);
+      background: linear-gradient(to right, #facc15, #fb923c, #c084fc, #1e3a8a);
       border-radius: 6px;
+      margin-top: 40px;
+      margin-bottom: 40px;
       position: relative;
-      margin: 40px 0;
     }
     .timeline-dot {
-      width: 22px;
-      height: 22px;
-      background: white;
-      border: 3px solid #1f4c79;
+      width: 26px;
+      height: 26px;
       border-radius: 50%;
+      background: white;
+      border: 4px solid #1e3a8a;
       position: absolute;
-      top: -5px;
+      top: -7px;
       transform: translateX(-50%);
     }
   </style>
@@ -39,154 +44,185 @@
 
 <body class="p-6">
 
-  <div id="root"></div>
+<div id="app" class="max-w-5xl mx-auto bg-white shadow-2xl rounded-2xl p-8"></div>
 
-  <script type="text/babel">
+<script>
+/* ---------------------------------------------------
+   FINAL STANDALONE IBM POWER TIMELINE APP
+   (React-free version — works directly on GitHub Pages)
+-----------------------------------------------------*/
 
-// ------------------------------------------------------
-// STANDALONE TIMELINE APP
-// ------------------------------------------------------
+let step = 1;
+let form = {
+  poDate: "",
+  s1022: 0,
+  s1024: 0,
+  e1050: 0,
+  e1080: 0,
+  labHours: 0,
+  lpars: 0
+};
 
-function App() {
-  const [step, setStep] = React.useState(1);
+let timeline = null;
 
-  const [form, setForm] = React.useState({
-    s1022: 0,
-    s1024: 0,
-    e1050: 0,
-    e1080: 0,
-    labHours: 0,
-    lpars: 0
-  });
-
-  const [timeline, setTimeline] = React.useState(null);
-
-  // Calculate timeline immediately (no recalc button)
-  React.useEffect(() => {
-    if (step === 2) generateTimeline();
-  }, [step]);
-
-  const generateTimeline = () => {
-    const start = new Date();
-    const phases = [
-      { label: "Discovery", weeks: 2 },
-      { label: "Planning", weeks: 3 },
-      { label: "Execution", weeks: 6 },
-      { label: "Validation", weeks: 2 },
-      { label: "Go-Live", weeks: 1 }
-    ];
-
-    let current = new Date(start);
-    const results = phases.map((p) => {
-      const startDate = new Date(current);
-      current.setDate(current.getDate() + p.weeks * 7);
-      const endDate = new Date(current);
-      return { ...p, start: startDate, end: endDate };
-    });
-
-    setTimeline(results);
-  };
-
-  const formatDate = (d) =>
-    d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
-
-  // -------------------------
-  // PAGE 1 — INPUTS
-  // -------------------------
-  if (step === 1) {
-    return (
-      <div className="max-w-3xl mx-auto bg-white p-6 rounded-xl shadow">
-
-        <h1 className="text-2xl font-bold mb-4">Basic Inputs</h1>
-
-        <div className="grid grid-cols-1 gap-6">
-
-          {[
-            { key: "s1022", label: "# S1022/1122" },
-            { key: "s1024", label: "# S1024/1124" },
-            { key: "e1050", label: "# E1050/1150" },
-            { key: "e1080", label: "# E1080/1180" },
-            { key: "labHours", label: "Expert Lab Hours" },
-            { key: "lpars", label: "LPAR Count" }
-          ].map(item => (
-            <div key={item.key} className="bg-gray-50 p-4 rounded-lg border">
-              <div className="flex justify-between mb-2">
-                <label className="font-medium">{item.label}</label>
-                <span className="font-bold">{form[item.key]}</span>
-              </div>
-              <input
-                type="range"
-                min="0"
-                max="50"
-                value={form[item.key]}
-                onChange={(e) =>
-                  setForm({ ...form, [item.key]: Number(e.target.value) })
-                }
-                className="w-full"
-              />
-            </div>
-          ))}
-
-        </div>
-
-        <div className="flex justify-end mt-6">
-          <button
-            onClick={() => setStep(2)}
-            className="px-6 py-2 bg-blue-600 text-white rounded-md"
-          >
-            Generate Timeline
-          </button>
-        </div>
-
-      </div>
-    );
-  }
-
-  // -------------------------
-  // PAGE 2 — TIMELINE RESULT
-  // -------------------------
-  return (
-    <div className="max-w-4xl mx-auto bg-white p-8 rounded-xl shadow">
-      <h1 className="text-2xl font-bold mb-6">Timeline Result</h1>
-
-      {timeline && (
-        <div>
-          <div className="timeline-bar">
-            {timeline.map((p, i) => (
-              <div
-                key={i}
-                className="timeline-dot"
-                style={{ left: `${(i / (timeline.length - 1)) * 100}%` }}
-              ></div>
-            ))}
-          </div>
-
-          <div className="grid grid-cols-1 gap-6 mt-8">
-            {timeline.map((p, i) => (
-              <div key={i} className="border p-4 rounded-lg">
-                <h3 className="font-semibold text-lg">{p.label}</h3>
-                <p className="text-gray-700 text-sm mt-1">
-                  {formatDate(p.start)} → {formatDate(p.end)}
-                </p>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      <div className="flex justify-between mt-10">
-        <button
-          onClick={() => setStep(1)}
-          className="px-6 py-2 border rounded-md"
-        >
-          Back to Inputs
-        </button>
-      </div>
-    </div>
-  );
+function addDays(date, days) {
+  const d = new Date(date);
+  d.setDate(d.getDate() + days);
+  return d;
 }
 
-ReactDOM.createRoot(document.getElementById("root")).render(<App />);
-  </script>
+function addWeeks(date, weeks) {
+  return addDays(date, weeks * 7);
+}
+
+function calcWeeks(count) {
+  const c = Number(count) || 0;
+  if (c === 0) return 0;
+  if (c <= 10) return 1;
+  return 3;
+}
+
+function generateTimeline() {
+  if (!form.poDate) return;
+
+  const po = new Date(form.poDate);
+  const buildShip = addDays(po, 21);
+
+  let install = new Date(buildShip);
+  install = addWeeks(install, calcWeeks(form.s1022));
+  install = addWeeks(install, calcWeeks(form.s1024));
+  install = addWeeks(install, calcWeeks(form.e1050));
+  install = addWeeks(install, calcWeeks(form.e1080));
+
+  let eos = addDays(install, 61);
+
+  if (form.labHours > 1000) {
+    const extra = Math.floor((form.labHours - 1000) / 100);
+    eos = addDays(eos, extra * 10);
+  }
+
+  if (form.lpars > 130) {
+    const extra = Math.floor((form.lpars - 130) / 10);
+    eos = addDays(eos, extra * 5);
+  }
+
+  timeline = { po, buildShip, install, eos };
+}
+
+function fmt(d) {
+  return d.toLocaleDateString();
+}
+
+function render() {
+  const app = document.getElementById("app");
+
+  if (step === 1) {
+    app.innerHTML = `
+      <h1 class="text-3xl font-bold mb-6">IBM Power — Timeline</h1>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+        <div>
+          <label class="block text-sm font-medium text-gray-700">PO Received Date</label>
+          <input type="date" id="poDate" class="mt-2 w-full p-3 border rounded-lg" value="${form.poDate}">
+        </div>
+
+        ${[
+          ["s1022", "# S1022/1122"],
+          ["s1024", "# S1024/1124"],
+          ["e1050", "# E1050/1150"],
+          ["e1080", "# E1080/1180"],
+          ["labHours", "Expert Lab Hours"],
+          ["lpars", "LPAR Count"]
+        ]
+          .map(
+            ([key, label]) => `
+          <div class="p-4 border rounded-lg bg-gray-50">
+            <div class="flex justify-between mb-2">
+              <label class="font-medium">${label}</label>
+              <span class="font-bold text-indigo-600">${form[key]}</span>
+            </div>
+            <input type="range" min="0" max="50" step="1" id="${key}" value="${
+              form[key]
+            }" class="w-full">
+          </div>
+        `
+          )
+          .join("")}
+
+      </div>
+
+      <div class="flex justify-end mt-8">
+        <button onclick="goNext()" class="px-6 py-2 bg-indigo-600 text-white rounded-md">
+          Generate Timeline
+        </button>
+      </div>
+    `;
+  }
+
+  if (step === 2) {
+    app.innerHTML = `
+      <h1 class="text-3xl font-bold mb-6">Timeline Result</h1>
+
+      <div class="timeline-bar">
+        <div class="timeline-dot" style="left: 0%"></div>
+        <div class="timeline-dot" style="left: 33%"></div>
+        <div class="timeline-dot" style="left: 66%"></div>
+        <div class="timeline-dot" style="left: 100%"></div>
+      </div>
+
+      <div class="grid grid-cols-4 text-center gap-6">
+        ${[
+          ["PO Received", fmt(timeline.po), "bg-yellow-400"],
+          ["Build/Ship", fmt(timeline.buildShip), "bg-orange-500"],
+          ["Installation", fmt(timeline.install), "bg-purple-500"],
+          ["End of Service", fmt(timeline.eos), "bg-blue-800"]
+        ]
+          .map(
+            ([label, date, color]) => `
+          <div>
+            <div class="circle ${color} mx-auto">${date}</div>
+            <p class="mt-3 font-semibold">${label}</p>
+          </div>
+        `
+          )
+          .join("")}
+      </div>
+
+      <div class="flex justify-between mt-10">
+        <button onclick="goBack()" class="px-6 py-2 border rounded-md">Back</button>
+        <button onclick="resetApp()" class="px-6 py-2 border rounded-md">Start Over</button>
+      </div>
+    `;
+  }
+
+  document.querySelectorAll("input[type=range], input[type=date]").forEach((el) => {
+    el.addEventListener("input", (e) => {
+      form[e.target.id] = e.target.value;
+      render();
+    });
+  });
+}
+
+function goNext() {
+  generateTimeline();
+  step = 2;
+  render();
+}
+
+function goBack() {
+  step = 1;
+  render();
+}
+
+function resetApp() {
+  step = 1;
+  form = { poDate: "", s1022: 0, s1024: 0, e1050: 0, e1080: 0, labHours: 0, lpars: 0 };
+  timeline = null;
+  render();
+}
+
+render();
+</script>
 </body>
 </html>
