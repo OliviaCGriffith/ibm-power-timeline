@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Timeline Result</title>
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- React & Babel -->
+  <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <style>
+    body {
+      background: #f5f7fa;
+      font-family: Arial, sans-serif;
+    }
+    .timeline-bar {
+      height: 12px;
+      background: linear-gradient(90deg, #1f4c79, #4fa3f7);
+      border-radius: 6px;
+      position: relative;
+      margin: 40px 0;
+    }
+    .timeline-dot {
+      width: 22px;
+      height: 22px;
+      background: white;
+      border: 3px solid #1f4c79;
+      border-radius: 50%;
+      position: absolute;
+      top: -5px;
+      transform: translateX(-50%);
+    }
+  </style>
+</head>
+
+<body class="p-6">
+
+  <div id="root"></div>
+
+  <script type="text/babel">
+
+// ------------------------------------------------------
+// STANDALONE TIMELINE APP
+// ------------------------------------------------------
+
+function App() {
+  const [step, setStep] = React.useState(1);
+
+  const [form, setForm] = React.useState({
+    s1022: 0,
+    s1024: 0,
+    e1050: 0,
+    e1080: 0,
+    labHours: 0,
+    lpars: 0
+  });
+
+  const [timeline, setTimeline] = React.useState(null);
+
+  // Calculate timeline immediately (no recalc button)
+  React.useEffect(() => {
+    if (step === 2) generateTimeline();
+  }, [step]);
+
+  const generateTimeline = () => {
+    const start = new Date();
+    const phases = [
+      { label: "Discovery", weeks: 2 },
+      { label: "Planning", weeks: 3 },
+      { label: "Execution", weeks: 6 },
+      { label: "Validation", weeks: 2 },
+      { label: "Go-Live", weeks: 1 }
+    ];
+
+    let current = new Date(start);
+    const results = phases.map((p) => {
+      const startDate = new Date(current);
+      current.setDate(current.getDate() + p.weeks * 7);
+      const endDate = new Date(current);
+      return { ...p, start: startDate, end: endDate };
+    });
+
+    setTimeline(results);
+  };
+
+  const formatDate = (d) =>
+    d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+
+  // -------------------------
+  // PAGE 1 — INPUTS
+  // -------------------------
+  if (step === 1) {
+    return (
+      <div className="max-w-3xl mx-auto bg-white p-6 rounded-xl shadow">
+
+        <h1 className="text-2xl font-bold mb-4">Basic Inputs</h1>
+
+        <div className="grid grid-cols-1 gap-6">
+
+          {[
+            { key: "s1022", label: "# S1022/1122" },
+            { key: "s1024", label: "# S1024/1124" },
+            { key: "e1050", label: "# E1050/1150" },
+            { key: "e1080", label: "# E1080/1180" },
+            { key: "labHours", label: "Expert Lab Hours" },
+            { key: "lpars", label: "LPAR Count" }
+          ].map(item => (
+            <div key={item.key} className="bg-gray-50 p-4 rounded-lg border">
+              <div className="flex justify-between mb-2">
+                <label className="font-medium">{item.label}</label>
+                <span className="font-bold">{form[item.key]}</span>
+              </div>
+              <input
+                type="range"
+                min="0"
+                max="50"
+                value={form[item.key]}
+                onChange={(e) =>
+                  setForm({ ...form, [item.key]: Number(e.target.value) })
+                }
+                className="w-full"
+              />
+            </div>
+          ))}
+
+        </div>
+
+        <div className="flex justify-end mt-6">
+          <button
+            onClick={() => setStep(2)}
+            className="px-6 py-2 bg-blue-600 text-white rounded-md"
+          >
+            Generate Timeline
+          </button>
+        </div>
+
+      </div>
+    );
+  }
+
+  // -------------------------
+  // PAGE 2 — TIMELINE RESULT
+  // -------------------------
+  return (
+    <div className="max-w-4xl mx-auto bg-white p-8 rounded-xl shadow">
+      <h1 className="text-2xl font-bold mb-6">Timeline Result</h1>
+
+      {timeline && (
+        <div>
+          <div className="timeline-bar">
+            {timeline.map((p, i) => (
+              <div
+                key={i}
+                className="timeline-dot"
+                style={{ left: `${(i / (timeline.length - 1)) * 100}%` }}
+              ></div>
+            ))}
+          </div>
+
+          <div className="grid grid-cols-1 gap-6 mt-8">
+            {timeline.map((p, i) => (
+              <div key={i} className="border p-4 rounded-lg">
+                <h3 className="font-semibold text-lg">{p.label}</h3>
+                <p className="text-gray-700 text-sm mt-1">
+                  {formatDate(p.start)} → {formatDate(p.end)}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <div className="flex justify-between mt-10">
+        <button
+          onClick={() => setStep(1)}
+          className="px-6 py-2 border rounded-md"
+        >
+          Back to Inputs
+        </button>
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+  </script>
+</body>
+</html>
