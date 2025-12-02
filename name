@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>IBM Power Timeline</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/pptxgenjs@3.11.0/dist/pptxgen.bundle.js"></script>
+</head>
+<body class="bg-gray-50">
+<div id="root"></div>
+
+<script type="text/babel">
+function IBMWizard() {
+  const { useState } = React;
+
+  const [step, setStep] = useState(1);
+  const [mode, setMode] = useState(null); // must choose before date input appears
+  const [form, setForm] = useState({
+    poDate: "",
+    endMigrationDate: "",
+    s1022: 0,
+    s1024: 0,
+    e1050: 0,
+    e1080: 0,
+    lpars: 0,
+  });
+  const [timeline, setTimeline] = useState(null);
+  const [error, setError] = useState("");
+
+  const handleChange = (e) => {
+    const { name, value, type } = e.target;
+    setForm((prev) => ({ ...prev, [name]: type === 'range' || type === 'number' ? Number(value) : value }));
+  };
+
+  const addDays = (date, days) => { const d = new Date(date); d.setDate(d.getDate() + days); return d; };
+  const addWeeks = (date, weeks) => addDays(date, weeks * 7);
+  const calcWeeks = (count) => {
+    const c = Number(count) || 0;
+    if (c === 0) return 0;
+    if (c <= 10) return 1;
+    if (c <= 20) return 2;
+    return 3;
+  };
+
+  const validateInputs = () => {
+    if (!mode) { setError('Please choose PO Received Date OR End of Migration Date.'); return false; }
+    if (mode === 'po' && !form.poDate) { setError('Please enter PO Received Date.'); return false; }
+    if (mode === 'end' && !form.endMigrationDate) { setError('Please enter End of Migration Date.'); return false; }
+    setError(''); return true;
+  };
+
+  const generateTimeline = () => {
+    if (!validateInputs()) return;
+
+    if (mode === 'po') {
+      const po = new Date(form.poDate);
+      const buildShip = addDays(po, 21);
+      let install = new Date(buildShip);
+      install = addWeeks(install, calcWeeks(form.s1022));
+      install = addWeeks(install, calcWeeks(form.s1024));
+      install = addWeeks(install, calcWeeks(form.e1050));
+      install = addWeeks(install, calcWeeks(form.e1080));
+      let endMigration = addDays(install, 5 + Math.floor((form.lpars || 0) / 12));
+      setTimeline({ po, buildShip, install, endMigration });
+    } else {
+      const endMigration = new Date(form.endMigrationDate);
+      let install = addDays(endMigration, -(5 + Math.floor((form.lpars || 0) / 12)));
+      install = addWeeks(install, -calcWeeks(form.e1080));
+      install = addWeeks(install, -calcWeeks(form.e1050));
+      install = addWeeks(install, -calcWeeks(form.s1024));
+      install = addWeeks(install, -calcWeeks(form.s1022));
+      const buildShip = addDays(install, -21);
+      const po = new Date(buildShip);
+      setTimeline({ po, buildShip, install, endMigration });
+    }
+
+    setStep(3);
+  };
+
+  const fmt = (d) => (d instanceof Date ? d.toLocaleDateString() : '');
+
+  const downloadPPT = async () => {
+    if (!timeline) { alert('Generate the timeline first.'); return; }
+
+    // Defensive check for library
+    const maybeP = window.PptxGenJS;
+    const Pctor = maybeP && (maybeP.default || maybeP);
+    if (!Pctor) {
+      console.error('PptxGenJS not found on window:', window.PptxGenJS);
+      alert('PptxGenJS library is not loaded. If you are inside a restricted preview (like ChatGPT), downloads are blocked. Run the HTML locally.');
+      return;
+    }
+
+    try {
+      const pptx = new Pctor();
+
+      // Slide 1 - textual list
+      const slide1 = pptx.addSlide();
+      slide1.addText('IBM Power Timeline', { x: 0.5, y: 0.3, fontSize: 28, bold: true });
+      const items = [
+        `1. ${fmt(timeline.po)} - PO Received Date`,
+        `2. ${fmt(timeline.buildShip)} - Build / Ship Date`,
+        `3. ${fmt(timeline.install)} - Data Center Installation Date`,
+        `4. ${fmt(timeline.endMigration)} - End of Migration Date`,
+      ];
+      slide1.addText(items.join('\n'), { x: 0.5, y: 1.0, fontSize: 18 });
+
+      // Slide 2 - graphical timeline
+      const slide2 = pptx.addSlide();
+      slide2.addText('IBM Power Timeline', { x: 0.5, y: 0.2, fontSize: 24, bold: true });
+      slide2.addShape(pptx.ShapeType.rect, { x: 0.5, y: 1.6, w: 9, h: 0.3, fill: { color: 'E0E0E0' } });
+
+      const dates = [fmt(timeline.po), fmt(timeline.buildShip), fmt(timeline.install), fmt(timeline.endMigration)];
+      const labels = ['PO Received','Build / Ship','Installation','End Migration'];
+      const colors = ['FFD54F','FF8A65','BA68C8','4FC3F7'];
+
+      let x = 0.6;
+      for (let i = 0; i < 4; i++) {
+        slide2.addShape(pptx.ShapeType.ellipse, { x, y: 1.3, w: 1.1, h: 1.1, fill: { color: 'FFFFFF' } });
+        slide2.addShape(pptx.ShapeType.ellipse, { x: x + 0.1, y: 1.4, w: 0.9, h: 0.9, fill: { color: colors[i] } });
+        slide2.addText(dates[i], { x: x + 0.12, y: 1.7, fontSize: 12, color: 'FFFFFF' });
+        slide2.addText(labels[i], { x, y: 2.3, fontSize: 12 });
+        x += 2.2;
+      }
+
+      // write file: prefer object API then fallback to string API
+      const filename = 'IBM_Power_Timeline.pptx';
+      if (typeof pptx.writeFile === 'function') {
+        try { await pptx.writeFile({ fileName: filename }); }
+        catch (err) {
+          console.warn('object writeFile failed, trying string API', err);
+          await pptx.writeFile(filename);
+        }
+      } else {
+        throw new Error('pptx.writeFile is not available');
+      }
+
+    } catch (err) {
+      console.error('PPT generation error', err);
+      alert('Failed to generate PPT: ' + (err && err.message ? err.message : err));
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-50 flex items-start justify-center p-8">
+      <div className="w-full max-w-5xl bg-white shadow-2xl rounded-2xl overflow-hidden">
+        <div className="bg-gradient-to-r from-blue-800 to-indigo-600 p-8 text-white">
+          <h1 className="text-3xl font-extrabold">IBM Power — Timeline</h1>
+        </div>
+
+        <div className="p-8">
+          {step === 1 && (
+            <div className="space-y-6">
+              {error && <p className="text-red-600">{error}</p>}
+
+              <div className="flex space-x-6 items-center">
+                <label className="flex items-center space-x-2">
+                  <input type="radio" name="dateMode" checked={mode === 'po'} onChange={() => { setMode('po'); setForm(prev => ({ ...prev, endMigrationDate: '' })); }} />
+                  <span>PO Received Date</span>
+                </label>
+                <label className="flex items-center space-x-2">
+                  <input type="radio" name="dateMode" checked={mode === 'end'} onChange={() => { setMode('end'); setForm(prev => ({ ...prev, poDate: '' })); }} />
+                  <span>End of Migration Date</span>
+                </label>
+              </div>
+
+              {/* sliders always visible (Option A) */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {mode === 'po' && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">PO Received Date</label>
+                    <input name="poDate" type="date" value={form.poDate} onChange={handleChange} className="mt-2 w-full p-3 border rounded-lg" />
+                  </div>
+                )}
+
+                {mode === 'end' && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">End of Migration Date</label>
+                    <input name="endMigrationDate" type="date" value={form.endMigrationDate} onChange={handleChange} className="mt-2 w-full p-3 border rounded-lg" />
+                  </div>
+                )}
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700"># S1022/1122 — <span className="font-bold text-indigo-600">{form.s1022}</span></label>
+                  <input name="s1022" type="range" min="0" max="25" step="1" value={form.s1022} onChange={handleChange} className="mt-3 w-full" />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700"># S1024/1124 — <span className="font-bold text-indigo-600">{form.s1024}</span></label>
+                  <input name="s1024" type="range" min="0" max="25" step="1" value={form.s1024} onChange={handleChange} className="mt-3 w-full" />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700"># E1050/1150 — <span className="font-bold text-indigo-600">{form.e1050}</span></label>
+                  <input name="e1050" type="range" min="0" max="20" step="1" value={form.e1050} onChange={handleChange} className="mt-3 w-full" />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700"># E1080/1180 — <span className="font-bold text-indigo-600">{form.e1080}</span></label>
+                  <input name="e1080" type="range" min="0" max="10" step="1" value={form.e1080} onChange={handleChange} className="mt-3 w-full" />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">LPAR Count — <span className="font-bold text-indigo-600">{form.lpars}</span></label>
+                  <input name="lpars" type="range" min="0" max="200" step="5" value={form.lpars} onChange={handleChange} className="mt-3 w-full" />
+                </div>
+              </div>
+
+              <div className="flex justify-end">
+                <button onClick={generateTimeline} className="px-6 py-2 bg-indigo-600 text-white rounded-md">Next</button>
+              </div>
+            </div>
+          )}
+
+          {step === 3 && timeline && (
+            <div className="space-y-10">
+              <h2 className="text-2xl font-semibold mb-10">Timeline Result</h2>
+
+              <div className="relative w-full flex justify-between items-center px-6" style={{ marginTop: '80px' }}>
+                <div className="absolute left-0 right-0 h-6 bg-gradient-to-r from-yellow-400 via-orange-400 via-purple-500 to-blue-900 rounded-full"></div>
+
+                {[
+                  { label: 'PO Received', date: fmt(timeline.po), color: 'bg-gradient-to-br from-yellow-300 to-yellow-500' },
+                  { label: 'Build / Ship', date: fmt(timeline.buildShip), color: 'bg-gradient-to-br from-orange-300 to-orange-600' },
+                  { label: 'Installation', date: fmt(timeline.install), color: 'bg-gradient-to-br from-purple-300 to-purple-600' },
+                  { label: 'End of Migration', date: fmt(timeline.endMigration), color: 'bg-gradient-to-br from-blue-400 to-blue-900' }
+                ].map((item, i) => (
+                  <div key={i} className="relative z-10 flex flex-col items-center text-center" style={{ transform: 'translateY(-40px)' }}>
+                    <div className="w-32 h-32 rounded-full bg-white shadow-xl flex items-center justify-center border-4 border-gray-200">
+                      <div className={`w-24 h-24 rounded-full flex items-center justify-center text-white font-bold text-sm ${item.color}`}>
+                        {item.date}
+                      </div>
+                    </div>
+                    <p className="mt-4 text-gray-700 font-semibold text-sm">{item.label}</p>
+                  </div>
+                ))}
+              </div>
+
+              <div className="flex justify-between mt-10">
+                <button onClick={() => setStep(1)} className="px-6 py-2 border rounded-md">Back</button>
+                <div className="flex items-center space-x-3">
+                  <button onClick={() => { setStep(1); setTimeline(null); }} className="px-6 py-2 border rounded-md">Start Over</button>
+                  <button onClick={downloadPPT} className="px-6 py-2 bg-indigo-600 text-white rounded-md">Download PPT</button>
+                </div>
+              </div>
+            </div>
+          )}
+
+        </div>
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<IBMWizard />);
+</script>
+</body>
+</html>
