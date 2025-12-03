@@ -4,253 +4,59 @@ const downloadPPT = async () => {
     const Pctor = window.PptxGenJS?.default || window.PptxGenJS;
     if (!Pctor) return alert("PPT library missing. Run locally.");
 
+    // Check if base64 image is provided
+    if (!timelineImageBase64) {
+      alert("Please paste your base64 image string in the code first!\n\nInstructions:\n1. Go to https://base64.guru/converter/encode/image\n2. Upload your Slide1.png\n3. Copy the base64 string (WITHOUT the 'data:image/png;base64,' prefix)\n4. Paste it into the timelineImageBase64 variable in the code");
+      return;
+    }
+
     const pptx = new Pctor();
     const slide = pptx.addSlide();
 
-    // Title
-    slide.addText("IBM Power Timeline", {
-      x: 0, y: 0.3, w: 10, fontSize: 36, bold: true, align: "center", color: "000000"
+    // Set white background
+    slide.background = { color: "FFFFFF" };
+
+    // Add the base timeline image from base64
+    slide.addImage({
+      data: `image/png;base64,${timelineImageBase64}`,
+      x: 1.25,
+      y: 1.3,
+      w: 7.5,
+      h: 4.5
     });
 
-    // Define positions for the 4 main milestone circles (centered on slide)
-    const centerY = 3.1;
-    const circleSize = 0.65;
-    const positions = [
-      { x: 2.0, color: "E67E22" },      // Orange - PO
-      { x: 4.2, color: "9B59B6" },      // Purple - Build
-      { x: 6.4, color: "3498DB" },      // Blue - Install  
-      { x: 8.6, color: "E74C3C" }       // Red - End
-    ];
-
-    // Create curved connector path segments using multiple rectangles
-    // Orange horizontal segment (from PO)
-    slide.addShape(pptx.ShapeType.rect, {
-      x: positions[0].x + circleSize + 0.05, y: centerY + circleSize/2 - 0.03,
-      w: 0.8, h: 0.06,
-      fill: { color: positions[0].color },
-      line: { type: "none" }
-    });
+    // Overlay the dynamic dates on top of the image
+    // These positions are calibrated to match where the date placeholders appear in your PNG
     
-    // Orange curve down
-    slide.addShape(pptx.ShapeType.rect, {
-      x: positions[0].x + circleSize + 0.8, y: centerY + circleSize/2 - 0.03,
-      w: 0.06, h: 0.35,
-      fill: { color: positions[0].color },
-      line: { type: "none" }
-    });
-
-    // Purple horizontal connector
-    slide.addShape(pptx.ShapeType.rect, {
-      x: positions[0].x + circleSize + 0.8, y: centerY + circleSize/2 + 0.29,
-      w: positions[1].x - (positions[0].x + circleSize + 0.8) + 0.1, h: 0.06,
-      fill: { color: positions[1].color },
-      line: { type: "none" }
-    });
-
-    // Purple horizontal (from Build circle)
-    slide.addShape(pptx.ShapeType.rect, {
-      x: positions[1].x + circleSize + 0.05, y: centerY + circleSize/2 + 0.29,
-      w: 1.0, h: 0.06,
-      fill: { color: positions[1].color },
-      line: { type: "none" }
-    });
-
-    // Blue horizontal connector
-    slide.addShape(pptx.ShapeType.rect, {
-      x: positions[1].x + circleSize + 1.0, y: centerY + circleSize/2 + 0.29,
-      w: positions[2].x - (positions[1].x + circleSize + 1.0) + 0.1, h: 0.06,
-      fill: { color: positions[2].color },
-      line: { type: "none" }
-    });
-
-    // Blue horizontal (from Install circle)
-    slide.addShape(pptx.ShapeType.rect, {
-      x: positions[2].x + circleSize + 0.05, y: centerY + circleSize/2 - 0.03,
-      w: 0.8, h: 0.06,
-      fill: { color: positions[2].color },
-      line: { type: "none" }
-    });
-    
-    // Blue curve down
-    slide.addShape(pptx.ShapeType.rect, {
-      x: positions[2].x + circleSize + 0.8, y: centerY + circleSize/2 - 0.03,
-      w: 0.06, h: 0.35,
-      fill: { color: positions[2].color },
-      line: { type: "none" }
-    });
-
-    // Red horizontal connector
-    slide.addShape(pptx.ShapeType.rect, {
-      x: positions[2].x + circleSize + 0.8, y: centerY + circleSize/2 + 0.29,
-      w: positions[3].x - (positions[2].x + circleSize + 0.8) + 0.1, h: 0.06,
-      fill: { color: positions[3].color },
-      line: { type: "none" }
-    });
-
-    // Red horizontal (from End circle)
-    slide.addShape(pptx.ShapeType.rect, {
-      x: positions[3].x + circleSize + 0.05, y: centerY + circleSize/2 + 0.29,
-      w: 0.5, h: 0.06,
-      fill: { color: positions[3].color },
-      line: { type: "none" }
-    });
-
-    // Vertical lines UPWARD (for Build and End)
-    slide.addShape(pptx.ShapeType.rect, {
-      x: positions[1].x + circleSize/2 - 0.03, y: 1.95,
-      w: 0.06, h: centerY - 1.95,
-      fill: { color: positions[1].color },
-      line: { type: "none" }
-    });
-    
-    slide.addShape(pptx.ShapeType.rect, {
-      x: positions[3].x + circleSize/2 - 0.03, y: 1.95,
-      w: 0.06, h: centerY - 1.95,
-      fill: { color: positions[3].color },
-      line: { type: "none" }
-    });
-
-    // Vertical lines DOWNWARD (for PO and Install)
-    slide.addShape(pptx.ShapeType.rect, {
-      x: positions[0].x + circleSize/2 - 0.03, y: centerY + circleSize,
-      w: 0.06, h: 0.9,
-      fill: { color: positions[0].color },
-      line: { type: "none" }
-    });
-    
-    slide.addShape(pptx.ShapeType.rect, {
-      x: positions[2].x + circleSize/2 - 0.03, y: centerY + circleSize,
-      w: 0.06, h: 0.9,
-      fill: { color: positions[2].color },
-      line: { type: "none" }
-    });
-
-    // Draw the 4 main white circles with shadow effect
-    positions.forEach((pos) => {
-      // Shadow circle
-      slide.addShape(pptx.ShapeType.ellipse, {
-        x: pos.x + 0.02, y: centerY + 0.02,
-        w: circleSize, h: circleSize,
-        fill: { color: "CCCCCC" },
-        line: { type: "none" }
-      });
-      
-      // Main white circle
-      slide.addShape(pptx.ShapeType.ellipse, {
-        x: pos.x, y: centerY,
-        w: circleSize, h: circleSize,
-        fill: { color: "FFFFFF" },
-        line: { color: "E0E0E0", width: 1 }
-      });
-      
-      // Icon placeholder circle (colored center)
-      slide.addShape(pptx.ShapeType.ellipse, {
-        x: pos.x + 0.2, y: centerY + 0.2,
-        w: 0.25, h: 0.25,
-        fill: { color: pos.color },
-        line: { type: "none" }
-      });
-    });
-
-    // Endpoint circles (small dots at bottom of vertical lines)
-    slide.addShape(pptx.ShapeType.ellipse, {
-      x: positions[0].x + circleSize/2 - 0.065, y: centerY + circleSize + 0.835,
-      w: 0.13, h: 0.13,
-      fill: { color: positions[0].color },
-      line: { type: "none" }
-    });
-    
-    slide.addShape(pptx.ShapeType.ellipse, {
-      x: positions[2].x + circleSize/2 - 0.065, y: centerY + circleSize + 0.835,
-      w: 0.13, h: 0.13,
-      fill: { color: positions[2].color },
-      line: { type: "none" }
-    });
-
-    // TOP LABELS - Build/Ship
-    slide.addText("Build / Ship", {
-      x: positions[1].x - 0.4, y: 1.15, w: 1.5, 
-      fontSize: 14, bold: true, color: positions[1].color, align: "center"
-    });
-    slide.addText("You can edit the text for\nthis timeline milestone.", {
-      x: positions[1].x - 0.65, y: 1.42, w: 2.0, 
-      fontSize: 9, color: "666666", align: "center"
-    });
-
-    // TOP LABELS - End of Migration
-    slide.addText("End of Migration", {
-      x: positions[3].x - 0.55, y: 1.15, w: 1.8, 
-      fontSize: 14, bold: true, color: positions[3].color, align: "center"
-    });
-    slide.addText("You can edit the text for\nthis timeline milestone.", {
-      x: positions[3].x - 0.8, y: 1.42, w: 2.3, 
-      fontSize: 9, color: "666666", align: "center"
-    });
-
-    // DATE LABELS - PO Received (upper left)
-    slide.addText(`[DATE OF PO RECEIVED]`, {
-      x: positions[0].x - 0.5, y: 2.25, w: 1.65, 
-      fontSize: 11, bold: true, italic: true, color: "3D3D3D", align: "center"
-    });
+    // [DATE OF PO RECEIVED] - Position: upper left
     slide.addText(fmt(timeline.po), {
-      x: positions[0].x - 0.5, y: 2.50, w: 1.65, 
-      fontSize: 12, bold: true, color: "000000", align: "center"
+      x: 1.5, y: 2.85, w: 1.8, 
+      fontSize: 14, bold: true, color: "000000", align: "center"
     });
 
-    // DATE LABELS - Build/Ship (lower middle-left)
-    slide.addText(`[DATE OF BUILD / SHIP]`, {
-      x: positions[1].x - 0.65, y: 3.75, w: 2.0, 
-      fontSize: 11, bold: true, italic: true, color: "3D3D3D", align: "center"
-    });
+    // [DATE OF BUILD / SHIP] - Position: lower middle-left
     slide.addText(fmt(timeline.buildShip), {
-      x: positions[1].x - 0.65, y: 4.0, w: 2.0, 
-      fontSize: 12, bold: true, color: "000000", align: "center"
+      x: 3.5, y: 4.2, w: 2.0, 
+      fontSize: 14, bold: true, color: "000000", align: "center"
     });
 
-    // DATE LABELS - Installation (upper right-middle)
-    slide.addText(`[DATE OF INSTALLATION]`, {
-      x: positions[2].x - 0.65, y: 2.25, w: 2.0, 
-      fontSize: 11, bold: true, italic: true, color: "3D3D3D", align: "center"
-    });
+    // [DATE OF INSTALLATION] - Position: upper middle-right
     slide.addText(fmt(timeline.install), {
-      x: positions[2].x - 0.65, y: 2.50, w: 2.0, 
-      fontSize: 12, bold: true, color: "000000", align: "center"
+      x: 5.6, y: 2.85, w: 1.9, 
+      fontSize: 14, bold: true, color: "000000", align: "center"
     });
 
-    // DATE LABELS - End of Migration (lower right)
-    slide.addText(`[DATE OF END OF MIGRATION]`, {
-      x: positions[3].x - 0.8, y: 3.75, w: 2.3, 
-      fontSize: 11, bold: true, italic: true, color: "3D3D3D", align: "center"
-    });
+    // [DATE OF END OF MIGRATION] - Position: lower right
     slide.addText(fmt(timeline.endMigration), {
-      x: positions[3].x - 0.8, y: 4.0, w: 2.3, 
-      fontSize: 12, bold: true, color: "000000", align: "center"
-    });
-
-    // BOTTOM LABELS - PO Received
-    slide.addText("PO Received", {
-      x: positions[0].x - 0.4, y: 4.6, w: 1.5, 
-      fontSize: 14, bold: true, color: positions[0].color, align: "center"
-    });
-    slide.addText("You can edit the text for\nthis timeline milestone.", {
-      x: positions[0].x - 0.65, y: 4.87, w: 2.0, 
-      fontSize: 9, color: "666666", align: "center"
-    });
-
-    // BOTTOM LABELS - Installation
-    slide.addText("Installation", {
-      x: positions[2].x - 0.4, y: 4.6, w: 1.5, 
-      fontSize: 14, bold: true, color: positions[2].color, align: "center"
-    });
-    slide.addText("You can edit the text for\nthis timeline milestone.", {
-      x: positions[2].x - 0.65, y: 4.87, w: 2.0, 
-      fontSize: 9, color: "666666", align: "center"
+      x: 7.2, y: 4.2, w: 2.2, 
+      fontSize: 14, bold: true, color: "000000", align: "center"
     });
 
     try {
       await pptx.writeFile({ fileName: "IBM_Power_Timeline.pptx" });
+      alert("PPT downloaded successfully!");
     } catch (err) {
       console.error(err);
-      alert("Failed to generate PPT");
+      alert("Failed to generate PPT: " + err.message);
     }
   };
