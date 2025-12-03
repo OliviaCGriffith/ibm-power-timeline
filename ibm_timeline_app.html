@@ -145,36 +145,71 @@ function IBMWizard() {
     if (!Pctor) return alert("PPT library missing. Run locally.");
 
     const pptx = new Pctor();
-
-    // Slide 1 — matches your screenshot EXACTLY using a background image
     const slide = pptx.addSlide();
 
-    // Insert background timeline graphic WITHOUT stretching
-    // NOTE: Replace "timeline_base.png" with the actual filename you will host or embed
+    // Insert centered PNG (base timeline graphic)
     slide.addImage({
       path: "Slide1.png",
-      x: 2.5,   // centered horizontally
-      y: 1.25,  // centered vertically
-      w: 5,     // native half-size width
-      h: 2.8125 // native half-size height
+      x: 2.5,
+      y: 1.25,
+      w: 5,
+      h: 2.8125
     });
 
-    // Text overlays — positions calibrated to match screenshot
-    slide.addText(`IBM Power Timeline`, {
-      x: 3.5, y: 0.3, fontSize: 32, bold: true, color: "000000"
+    // Title
+    slide.addText("IBM Power Timeline", {
+      x: 1.5, y: 0.2, w: 7, fontSize: 32, bold: true, align: "center"
     });
 
-    slide.addText(fmt(timeline.po), {
-      x: 2.7, y: 2.1, fontSize: 18, bold: true, color: "444444"
+    // --- TOP LABELS ---
+    slide.addText("Build / Ship", {
+      x: 3.7, y: 0.9, fontSize: 16, bold: true, color: "6A4FB3", align: "center"
     });
-    slide.addText(fmt(timeline.buildShip), {
-      x: 3.9, y: 2.1, fontSize: 18, bold: true, color: "444444"
+    slide.addText("You can edit the text for this timeline milestone.", {
+      x: 3.3, y: 1.15, w: 1.6, fontSize: 11, color: "444444", align: "center"
     });
-    slide.addText(fmt(timeline.install), {
-      x: 5.3, y: 2.1, fontSize: 18, bold: true, color: "444444"
+
+    slide.addText("End of Migration", {
+      x: 6.4, y: 0.9, fontSize: 16, bold: true, color: "C0392B", align: "center"
     });
-    slide.addText(fmt(timeline.endMigration), {
-      x: 6.6, y: 2.1, fontSize: 18, bold: true, color: "444444"
+    slide.addText("You can edit the text for this timeline milestone.", {
+      x: 6.0, y: 1.15, w: 1.6, fontSize: 11, color: "444444", align: "center"
+    });
+
+    // --- BRACKET DATES ---
+    slide.addText(`[DATE OF PO RECEIVED]
+${fmt(timeline.po)}`, {
+      x: 1.1, y: 1.9, w: 2, fontSize: 15, bold: true, color: "444444", align: "center"
+    });
+
+    slide.addText(`[DATE OF BUILD / SHIP]
+${fmt(timeline.buildShip)}`, {
+      x: 2.9, y: 2.45, w: 2, fontSize: 15, bold: true, color: "444444", align: "center"
+    });
+
+    slide.addText(`[DATE OF INSTALLATION]
+${fmt(timeline.install)}`, {
+      x: 4.7, y: 1.9, w: 2, fontSize: 15, bold: true, color: "444444", align: "center"
+    });
+
+    slide.addText(`[DATE OF END OF MIGRATION]
+${fmt(timeline.endMigration)}`, {
+      x: 6.4, y: 2.45, w: 2, fontSize: 15, bold: true, color: "444444", align: "center"
+    });
+
+    // --- LOWER LABELS ---
+    slide.addText("PO Received", {
+      x: 1.2, y: 3.3, fontSize: 16, bold: true, color: "E67E22", align: "center"
+    });
+    slide.addText("You can edit the text for this timeline milestone.", {
+      x: 1.0, y: 3.55, w: 2.2, fontSize: 11, color: "444444", align: "center"
+    });
+
+    slide.addText("Installation", {
+      x: 4.9, y: 3.3, fontSize: 16, bold: true, color: "1BA2C1", align: "center"
+    });
+    slide.addText("You can edit the text for this timeline milestone.", {
+      x: 4.7, y: 3.55, w: 2.2, fontSize: 11, color: "444444", align: "center"
     });
 
     try {
