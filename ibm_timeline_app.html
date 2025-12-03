@@ -1,144 +1,4 @@
-<!-- Cleaned & Optimized IBM Power Timeline Tool -->
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <title>IBM Power Timeline</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
-  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
-  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://cdn.jsdelivr.net/npm/pptxgenjs@3.11.0/dist/pptxgen.bundle.js"></script>
-</head>
-<body class="bg-gray-50">
-<div id="root"></div>
-
-<script type="text/babel">
-/****************************
- * Utility Functions
- ****************************/
-const addDays = (date, days) => {
-  const d = new Date(date);
-  d.setDate(d.getDate() + days);
-  return d;
-};
-
-const addWeeks = (date, weeks) => addDays(date, weeks * 7);
-
-const calcWeeks = (count) => {
-  const c = Number(count) || 0;
-  if (c === 0) return 0;
-  if (c <= 10) return 1;
-  if (c <= 20) return 2;
-  return 3;
-};
-
-const fmt = (d) => (d instanceof Date ? d.toLocaleDateString() : "");
-
-/****************************
- * Main Wizard Component
- ****************************/
-function IBMWizard() {
-  const { useState } = React;
-
-  const [step, setStep] = useState(1);
-  const [mode, setMode] = useState(null);
-  const [timeline, setTimeline] = useState(null);
-  const [error, setError] = useState("");
-
-  const [form, setForm] = useState({
-    poDate: "",
-    endMigrationDate: "",
-    s1022: 0,
-    s1024: 0,
-    e1050: 0,
-    e1080: 0,
-    lpars: 0
-  });
-
-  const handleChange = (e) => {
-    const { name, value, type } = e.target;
-    setForm((prev) => ({
-      ...prev,
-      [name]: type === "range" || type === "number" ? Number(value) : value
-    }));
-  };
-
-  /****************************
-   * Input Validation
-   ****************************/
-  const validateInputs = () => {
-    if (!mode) {
-      setError("Please choose PO Received Date OR End of Migration Date.");
-      return false;
-    }
-    if (mode === "po" && !form.poDate) {
-      setError("Please enter the PO Received Date.");
-      return false;
-    }
-    if (mode === "end" && !form.endMigrationDate) {
-      setError("Please enter the End of Migration Date.");
-      return false;
-    }
-    setError("");
-    return true;
-  };
-
-  /****************************
-   * Timeline Generator
-   ****************************/
-  const generateTimeline = () => {
-    if (!validateInputs()) return;
-
-    let po, buildShip, install, endMigration;
-
-    if (mode === "po") {
-      po = new Date(form.poDate + "T00:00:00");
-
-      buildShip = addDays(po, 21);
-      install = new Date(buildShip);
-
-      install = addWeeks(install, calcWeeks(form.s1022));
-      install = addWeeks(install, calcWeeks(form.s1024));
-      install = addWeeks(install, calcWeeks(form.e1050));
-      install = addWeeks(install, calcWeeks(form.e1080));
-
-      endMigration = addDays(
-        install,
-        5 + Math.floor((form.lpars || 0) / 12)
-      );
-    } else {
-      // User entered END OF MIGRATION DATE — correct back‑calculation
-      endMigration = new Date(form.endMigrationDate + "T00:00:00");
-
-      // Back out LPAR migration
-      install = addDays(
-        endMigration,
-        -(5 + Math.floor((form.lpars || 0) / 12))
-      );
-
-      // Back out server build timelines
-      install = addWeeks(install, -calcWeeks(form.e1080));
-      install = addWeeks(install, -calcWeeks(form.e1050));
-      install = addWeeks(install, -calcWeeks(form.s1024));
-      install = addWeeks(install, -calcWeeks(form.s1022));
-
-      // Build/Ship is 21 days before install
-      buildShip = addDays(install, -21);
-
-      // TRUE PO date = buildShip − 21 days
-      po = addDays(buildShip, -21);
-    }
-
-    setTimeline({ po, buildShip, install, endMigration });
-    setStep(3);
-  };
-
-  /****************************
-   * PPT Download
-   ****************************/
-  const downloadPPT = async () => {
+const downloadPPT = async () => {
     if (!timeline) return alert("Generate the timeline first.");
 
     const Pctor = window.PptxGenJS?.default || window.PptxGenJS;
@@ -147,69 +7,181 @@ function IBMWizard() {
     const pptx = new Pctor();
     const slide = pptx.addSlide();
 
-    // Insert centered PNG (base timeline graphic)
-    slide.addImage({
-      path: "Slide1.png",
-      x: 2.5,
-      y: 1.25,
-      w: 5,
-      h: 2.8125
-    });
-
     // Title
     slide.addText("IBM Power Timeline", {
-      x: 1.5, y: 0.2, w: 7, fontSize: 32, bold: true, align: "center"
+      x: 0, y: 0.3, w: 10, fontSize: 36, bold: true, align: "center", color: "000000"
     });
 
-    // --- TOP LABELS ---
+    // Define positions for the 4 main milestone circles
+    const centerY = 3.0;
+    const circleSize = 0.6;
+    const positions = [
+      { x: 1.8, label: "PO", color: "E67E22" },      // Orange
+      { x: 4.0, label: "Build", color: "9B59B6" },   // Purple
+      { x: 6.2, label: "Install", color: "3498DB" }, // Blue
+      { x: 8.4, label: "End", color: "E74C3C" }      // Red
+    ];
+
+    // Draw connector lines between circles
+    // Orange line: PO to Build (curved down)
+    slide.addShape(pptx.ShapeType.line, {
+      x: positions[0].x + circleSize/2, y: centerY + circleSize/2,
+      w: 1.2, h: 0.4,
+      line: { color: positions[0].color, width: 4 }
+    });
+    
+    // Purple line: Build horizontal
+    slide.addShape(pptx.ShapeType.line, {
+      x: positions[1].x + circleSize, y: centerY + circleSize/2,
+      w: 1.4, h: 0,
+      line: { color: positions[1].color, width: 4 }
+    });
+    
+    // Blue line: Install to End (curved down)
+    slide.addShape(pptx.ShapeType.line, {
+      x: positions[2].x + circleSize, y: centerY + circleSize/2,
+      w: 1.4, h: 0.4,
+      line: { color: positions[2].color, width: 4 }
+    });
+    
+    // Red line: from End circle
+    slide.addShape(pptx.ShapeType.line, {
+      x: positions[3].x + circleSize, y: centerY + circleSize/2,
+      w: 0.8, h: 0,
+      line: { color: positions[3].color, width: 4 }
+    });
+
+    // Vertical lines to upper labels
+    slide.addShape(pptx.ShapeType.line, {
+      x: positions[1].x + circleSize/2, y: centerY - 0.2,
+      w: 0, h: 1.2,
+      line: { color: positions[1].color, width: 4 }
+    });
+    
+    slide.addShape(pptx.ShapeType.line, {
+      x: positions[3].x + circleSize/2, y: centerY - 0.2,
+      w: 0, h: 1.2,
+      line: { color: positions[3].color, width: 4 }
+    });
+
+    // Vertical lines to lower labels
+    slide.addShape(pptx.ShapeType.line, {
+      x: positions[0].x + circleSize/2, y: centerY + circleSize,
+      w: 0, h: 1.0,
+      line: { color: positions[0].color, width: 4 }
+    });
+    
+    slide.addShape(pptx.ShapeType.line, {
+      x: positions[2].x + circleSize/2, y: centerY + circleSize,
+      w: 0, h: 1.0,
+      line: { color: positions[2].color, width: 4 }
+    });
+
+    // Draw the 4 main white circles with colored borders
+    positions.forEach((pos) => {
+      slide.addShape(pptx.ShapeType.ellipse, {
+        x: pos.x, y: centerY,
+        w: circleSize, h: circleSize,
+        fill: { color: "FFFFFF" },
+        line: { color: "DDDDDD", width: 2 }
+      });
+      
+      // Add icon placeholder circles (smaller, colored)
+      slide.addShape(pptx.ShapeType.ellipse, {
+        x: pos.x + 0.15, y: centerY + 0.15,
+        w: 0.3, h: 0.3,
+        fill: { color: pos.color }
+      });
+    });
+
+    // Endpoint circles (small dots)
+    slide.addShape(pptx.ShapeType.ellipse, {
+      x: positions[0].x + circleSize/2 - 0.08, y: centerY + circleSize + 0.92,
+      w: 0.16, h: 0.16,
+      fill: { color: positions[0].color }
+    });
+    
+    slide.addShape(pptx.ShapeType.ellipse, {
+      x: positions[2].x + circleSize/2 - 0.08, y: centerY + circleSize + 0.92,
+      w: 0.16, h: 0.16,
+      fill: { color: positions[2].color }
+    });
+
+    // TOP LABELS - Build/Ship
     slide.addText("Build / Ship", {
-      x: 3.7, y: 0.9, fontSize: 16, bold: true, color: "6A4FB3", align: "center"
+      x: positions[1].x - 0.5, y: 1.3, w: 1.6, 
+      fontSize: 13, bold: true, color: positions[1].color, align: "center"
     });
-    slide.addText("You can edit the text for this timeline milestone.", {
-      x: 3.3, y: 1.15, w: 1.6, fontSize: 11, color: "444444", align: "center"
+    slide.addText("You can edit the text for\nthis timeline milestone.", {
+      x: positions[1].x - 0.7, y: 1.55, w: 2.0, 
+      fontSize: 8, color: "666666", align: "center"
     });
 
+    // TOP LABELS - End of Migration
     slide.addText("End of Migration", {
-      x: 6.4, y: 0.9, fontSize: 16, bold: true, color: "C0392B", align: "center"
+      x: positions[3].x - 0.5, y: 1.3, w: 1.6, 
+      fontSize: 13, bold: true, color: positions[3].color, align: "center"
     });
-    slide.addText("You can edit the text for this timeline milestone.", {
-      x: 6.0, y: 1.15, w: 1.6, fontSize: 11, color: "444444", align: "center"
-    });
-
-    // --- BRACKET DATES ---
-    slide.addText(`[DATE OF PO RECEIVED]
-${fmt(timeline.po)}`, {
-      x: 1.1, y: 1.9, w: 2, fontSize: 15, bold: true, color: "444444", align: "center"
+    slide.addText("You can edit the text for\nthis timeline milestone.", {
+      x: positions[3].x - 0.7, y: 1.55, w: 2.0, 
+      fontSize: 8, color: "666666", align: "center"
     });
 
-    slide.addText(`[DATE OF BUILD / SHIP]
-${fmt(timeline.buildShip)}`, {
-      x: 2.9, y: 2.45, w: 2, fontSize: 15, bold: true, color: "444444", align: "center"
+    // DATE LABELS (italicized brackets with actual dates)
+    slide.addText(`[DATE OF PO RECEIVED]`, {
+      x: positions[0].x - 0.6, y: 2.3, w: 1.8, 
+      fontSize: 10, bold: true, italic: true, color: "333333", align: "center"
+    });
+    slide.addText(fmt(timeline.po), {
+      x: positions[0].x - 0.6, y: 2.52, w: 1.8, 
+      fontSize: 10, bold: true, color: "333333", align: "center"
     });
 
-    slide.addText(`[DATE OF INSTALLATION]
-${fmt(timeline.install)}`, {
-      x: 4.7, y: 1.9, w: 2, fontSize: 15, bold: true, color: "444444", align: "center"
+    slide.addText(`[DATE OF BUILD / SHIP]`, {
+      x: positions[1].x - 0.6, y: 3.7, w: 1.8, 
+      fontSize: 10, bold: true, italic: true, color: "333333", align: "center"
+    });
+    slide.addText(fmt(timeline.buildShip), {
+      x: positions[1].x - 0.6, y: 3.92, w: 1.8, 
+      fontSize: 10, bold: true, color: "333333", align: "center"
     });
 
-    slide.addText(`[DATE OF END OF MIGRATION]
-${fmt(timeline.endMigration)}`, {
-      x: 6.4, y: 2.45, w: 2, fontSize: 15, bold: true, color: "444444", align: "center"
+    slide.addText(`[DATE OF INSTALLATION]`, {
+      x: positions[2].x - 0.6, y: 2.3, w: 1.8, 
+      fontSize: 10, bold: true, italic: true, color: "333333", align: "center"
+    });
+    slide.addText(fmt(timeline.install), {
+      x: positions[2].x - 0.6, y: 2.52, w: 1.8, 
+      fontSize: 10, bold: true, color: "333333", align: "center"
     });
 
-    // --- LOWER LABELS ---
+    slide.addText(`[DATE OF END OF MIGRATION]`, {
+      x: positions[3].x - 0.8, y: 3.7, w: 2.2, 
+      fontSize: 10, bold: true, italic: true, color: "333333", align: "center"
+    });
+    slide.addText(fmt(timeline.endMigration), {
+      x: positions[3].x - 0.8, y: 3.92, w: 2.2, 
+      fontSize: 10, bold: true, color: "333333", align: "center"
+    });
+
+    // BOTTOM LABELS - PO Received
     slide.addText("PO Received", {
-      x: 1.2, y: 3.3, fontSize: 16, bold: true, color: "E67E22", align: "center"
+      x: positions[0].x - 0.5, y: 4.5, w: 1.6, 
+      fontSize: 13, bold: true, color: positions[0].color, align: "center"
     });
-    slide.addText("You can edit the text for this timeline milestone.", {
-      x: 1.0, y: 3.55, w: 2.2, fontSize: 11, color: "444444", align: "center"
+    slide.addText("You can edit the text for\nthis timeline milestone.", {
+      x: positions[0].x - 0.7, y: 4.75, w: 2.0, 
+      fontSize: 8, color: "666666", align: "center"
     });
 
+    // BOTTOM LABELS - Installation
     slide.addText("Installation", {
-      x: 4.9, y: 3.3, fontSize: 16, bold: true, color: "1BA2C1", align: "center"
+      x: positions[2].x - 0.5, y: 4.5, w: 1.6, 
+      fontSize: 13, bold: true, color: positions[2].color, align: "center"
     });
-    slide.addText("You can edit the text for this timeline milestone.", {
-      x: 4.7, y: 3.55, w: 2.2, fontSize: 11, color: "444444", align: "center"
+    slide.addText("You can edit the text for\nthis timeline milestone.", {
+      x: positions[2].x - 0.7, y: 4.75, w: 2.0, 
+      fontSize: 8, color: "666666", align: "center"
     });
 
     try {
@@ -219,173 +191,3 @@ ${fmt(timeline.endMigration)}`, {
       alert("Failed to generate PPT");
     }
   };
-
-  /****************************
-   * Render
-   ****************************/
-  return (
-    <div className="min-h-screen bg-gray-50 flex items-start justify-center p-8">
-      <div className="w-full max-w-5xl bg-white shadow-2xl rounded-2xl overflow-hidden">
-        <div className="bg-gradient-to-r from-blue-800 to-indigo-600 p-8 text-white">
-          <h1 className="text-3xl font-extrabold">IBM Power — Timeline</h1>
-        </div>
-
-        <div className="p-8">
-          {/* Step 1 */}
-          {step === 1 && (
-            <div className="space-y-6">
-              {error && <p className="text-red-600">{error}</p>}
-
-              <div className="flex space-x-6 items-center">
-                <label className="flex items-center space-x-2">
-                  <input
-                    type="radio"
-                    name="mode"
-                    checked={mode === "po"}
-                    onChange={() => {
-                      setMode("po");
-                      setForm((p) => ({ ...p, endMigrationDate: "" }));
-                    }}
-                  />
-                  <span>PO Received Date</span>
-                </label>
-
-                <label className="flex items-center space-x-2">
-                  <input
-                    type="radio"
-                    name="mode"
-                    checked={mode === "end"}
-                    onChange={() => {
-                      setMode("end");
-                      setForm((p) => ({ ...p, poDate: "" }));
-                    }}
-                  />
-                  <span>End of Migration Date</span>
-                </label>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {mode === "po" && (
-                  <div>
-                    <label className="block font-medium">PO Received Date</label>
-                    <input
-                      type="date"
-                      name="poDate"
-                      value={form.poDate}
-                      onChange={handleChange}
-                      className="mt-2 w-full p-3 border rounded-lg"
-                    />
-                  </div>
-                )}
-
-                {mode === "end" && (
-                  <div>
-                    <label className="block font-medium">End of Migration Date</label>
-                    <input
-                      type="date"
-                      name="endMigrationDate"
-                      value={form.endMigrationDate}
-                      onChange={handleChange}
-                      className="mt-2 w-full p-3 border rounded-lg"
-                    />
-                  </div>
-                )}
-
-                {/* Slider Groups */}
-                {[
-                  { key: "s1022", label: "# S1022/1122", max: 25 },
-                  { key: "s1024", label: "# S1024/1124", max: 25 },
-                  { key: "e1050", label: "# E1050/1150", max: 20 },
-                  { key: "e1080", label: "# E1080/1180", max: 10 },
-                  { key: "lpars", label: "LPAR Count", max: 200, step: 5 }
-                ].map(({ key, label, max, step = 1 }) => (
-                  <div key={key}>
-                    <label className="block font-medium">{label} — <span className="text-indigo-600 font-bold">{form[key]}</span></label>
-                    <input
-                      type="range"
-                      name={key}
-                      min="0"
-                      max={max}
-                      step={step}
-                      value={form[key]}
-                      onChange={handleChange}
-                      className="mt-2 w-full"
-                    />
-                  </div>
-                ))}
-              </div>
-
-              <div className="flex justify-end">
-                <button
-                  onClick={generateTimeline}
-                  className="px-6 py-2 bg-indigo-600 text-white rounded-md"
-                >
-                  Next
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* Step 3 */}
-          {step === 3 && timeline && (
-            <div className="space-y-10">
-              <h2 className="text-2xl font-semibold mb-10">Timeline Result</h2>
-
-              <div className="relative w-full flex justify-between items-center px-6" style={{ marginTop: "80px" }}>
-                <div className="absolute left-0 right-0 h-6 bg-gradient-to-r from-yellow-400 via-orange-400 via-purple-500 to-blue-900 rounded-full"></div>
-
-                {[ 
-                  { label: "PO Received", date: fmt(timeline.po), color: "bg-gradient-to-br from-yellow-300 to-yellow-500" },
-                  { label: "Build / Ship", date: fmt(timeline.buildShip), color: "bg-gradient-to-br from-orange-300 to-orange-600" },
-                  { label: "Installation", date: fmt(timeline.install), color: "bg-gradient-to-br from-purple-300 to-purple-600" },
-                  { label: "End of Migration", date: fmt(timeline.endMigration), color: "bg-gradient-to-br from-blue-400 to-blue-900" }
-                ].map((item, i) => (
-                  <div key={i} className="relative z-10 flex flex-col items-center text-center" style={{ transform: "translateY(-40px)" }}>
-                    <div className="w-32 h-32 rounded-full bg-white shadow-xl flex items-center justify-center border-4 border-gray-200">
-                      <div className={`w-24 h-24 rounded-full flex items-center justify-center text-white font-bold text-sm ${item.color}`}>
-                        {item.date}
-                      </div>
-                    </div>
-                    <p className="mt-4 text-gray-700 font-semibold text-sm">{item.label}</p>
-                  </div>
-                ))}
-              </div>
-
-              <div className="flex justify-between mt-10">
-                <button
-                  onClick={() => setStep(1)}
-                  className="px-6 py-2 border rounded-md"
-                >
-                  Back
-                </button>
-
-                <div className="flex items-center space-x-3">
-                  <button
-                    onClick={() => { setStep(1); setTimeline(null); }}
-                    className="px-6 py-2 border rounded-md"
-                  >
-                    Start Over
-                  </button>
-
-                  <button
-                    onClick={downloadPPT}
-                    className="px-6 py-2 bg-indigo-600 text-white rounded-md"
-                  >
-                    Download PPT
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
-
-        </div>
-      </div>
-    </div>
-  );
-}
-
-ReactDOM.createRoot(document.getElementById("root"))
-  .render(<IBMWizard />);
-</script>
-</body>
-</html>
