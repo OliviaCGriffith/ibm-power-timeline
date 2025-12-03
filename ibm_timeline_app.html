@@ -152,30 +152,29 @@ function IBMWizard() {
     // Insert background timeline graphic WITHOUT stretching
     // NOTE: Replace "timeline_base.png" with the actual filename you will host or embed
     slide.addImage({
-      path: "timeline_base.png",
-      x: 0,
-      y: 0,
-      w: 10,
-      h: 5.625, // 16:9 native PPT size (no stretch)
-      sizing: { type: 'contain', w: 10, h: 5.625 }
+      path: "Slide1.png",
+      x: 2.5,   // centered horizontally
+      y: 1.25,  // centered vertically
+      w: 5,     // native half-size width
+      h: 2.8125 // native half-size height
     });
 
     // Text overlays — positions calibrated to match screenshot
     slide.addText(`IBM Power Timeline`, {
-      x: 1.4, y: 0.2, fontSize: 32, bold: true, color: "000000"
+      x: 3.5, y: 0.3, fontSize: 32, bold: true, color: "000000"
     });
 
     slide.addText(fmt(timeline.po), {
-      x: 1.4, y: 2.8, fontSize: 20, bold: true, color: "444444"
+      x: 2.7, y: 2.1, fontSize: 18, bold: true, color: "444444"
     });
     slide.addText(fmt(timeline.buildShip), {
-      x: 3.65, y: 2.8, fontSize: 20, bold: true, color: "444444"
+      x: 3.9, y: 2.1, fontSize: 18, bold: true, color: "444444"
     });
     slide.addText(fmt(timeline.install), {
-      x: 5.8, y: 2.8, fontSize: 20, bold: true, color: "444444"
+      x: 5.3, y: 2.1, fontSize: 18, bold: true, color: "444444"
     });
     slide.addText(fmt(timeline.endMigration), {
-      x: 8.0, y: 2.8, fontSize: 20, bold: true, color: "444444"
+      x: 6.6, y: 2.1, fontSize: 18, bold: true, color: "444444"
     });
 
     try {
