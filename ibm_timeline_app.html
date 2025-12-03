@@ -1,232 +1,217 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>IBM Power Timeline — Pixel-Perfect PPT Generator</title>
+  <meta charset="utf-8" />
+  <title>IBM Power Timeline — Pixel-Perfect</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-
-  <!-- React + Babel -->
+  <!-- Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    html,body { height:100%; margin:0; font-family: "IBM Plex Sans", system-ui, -apple-system, sans-serif; background:#ffffff; color:#222; }
+    .app { min-height:100%; display:flex; align-items:center; justify-content:center; padding:36px; box-sizing:border-box; }
+    .card { width:100%; max-width:1100px; background:white; border-radius:14px; box-shadow:0 20px 50px rgba(13,18,25,0.12); overflow:hidden; }
+    .header { background:linear-gradient(90deg,#0b3b80,#4b329c); padding:34px 40px; color:white; }
+    .header h1 { margin:0; font-size:32px; font-weight:700; letter-spacing:0.2px; text-align:left; }
+    .body { padding:40px; }
+    /* Timeline preview styling (strictly visual) */
+    .timeline-preview { width:100%; height:360px; display:flex; align-items:center; justify-content:center; position:relative; }
+    .timeline-track { width:86%; height:8px; border-radius:8px; background:linear-gradient(90deg,#f2a53d,#a54aa6,#2b7fb8); position:absolute; top:50%; transform:translateY(-50%); box-shadow:inset 0 0 0 8px rgba(255,255,255,0.45); }
+    .bubble { width:120px; height:120px; border-radius:50%; background:#fff; display:flex; align-items:center; justify-content:center; box-shadow:0 8px 18px rgba(0,0,0,0.15); border:6px solid rgba(0,0,0,0.04); position:absolute; transform:translateY(-54px); }
+    .bubble .inner { width:86px; height:86px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:13px; color:white; }
+    .label-top { position:absolute; text-align:center; font-weight:700; font-size:15px; }
+    .label-bottom { position:absolute; text-align:center; font-weight:700; color:#333; font-size:13px; margin-top:12px; }
+    .small-note { position:absolute; text-align:center; font-size:11px; color:#666; white-space:pre-line; margin-top:4px; }
+    .controls { padding:18px 0 0 0; display:flex; justify-content:flex-end; gap:12px; }
+    button { cursor:pointer; border-radius:8px; padding:10px 14px; font-weight:600; border: none; }
+    .btn-primary { background:#4c2fb2; color:white; }
+    .btn-ghost { background:white; border:1px solid #ddd; color:#222; }
+    .debug { font-family:monospace; font-size:12px; color:#a00; margin-top:8px; }
+    /* layout positions approximating the screenshot */
+    .pos-po { left:10%; }
+    .pos-build { left:33%; }
+    .pos-install { left:56%; }
+    .pos-end { left:80%; }
+    /* Hidden file area for base64 fallback */
+    #timeline-bg-json { display:none; }
+  </style>
+  <!-- CDNs -->
   <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-
-  <!-- Tailwind for UI only -->
-  <script src="https://cdn.tailwindcss.com"></script>
-
-  <!-- PPTX generation -->
   <script src="https://cdn.jsdelivr.net/npm/pptxgenjs@3.11.0/dist/pptxgen.bundle.js"></script>
-
-  <!-- IBM Plex Sans for the HTML UI preview (PowerPoint will fall back if font not installed) -->
-  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;600;700;800&display=swap" rel="stylesheet">
-
-  <style>
-    body { font-family: 'IBM Plex Sans', system-ui, -apple-system, sans-serif; }
-  </style>
-  <script id="timeline-bg-json" type="text/plain">
-{"FULL":"iVBORw0KGgoAAAANSUhEUgAAAtAAAAGVCAIAAABYSFGJAAAAhGVYSWZNTQAqAAAABAAAAAEAAQAAAgAAABAA4bMMT2/CYmljbUqbNbYXKKogZHJoXkuGR0KQNH+dYtG7DqD6dqQ7Y2UQwRyQDf79NAYESktL77nnHlr6888/c4XQI1LWar6fnTt3brNmzXaqWqHLc31qj1i9evWiGH7ZbcUMlyBRT4gAZAweAxVyBuVR6GWCptODEkzqBAFyegIc0vlPs7sPB4nQhBVZ+MEVyCf99n4Hmjx81fWx0vPLF/91G9Oz0xefaHsxeXbfrF18tNc7P36dHhpAE93piC73M9/qMiH//+9+Zw1U4Ba+ZnERSqVAvR2TW5JHhGU2KDvUtDmsSW2VhUXYQDqgEgBIRA2iMgwpH2VagCCAEhIASEgBCIPwL/B7JHeqy9RL3ZAAAAAElFTkSuQmCC"}
-  </script>
 </head>
-<body class="bg-gray-50">
-<div id="root"></div>
+<body>
+  <!-- Put your Base64 here in JSON form (multi-chunk safe). Leave as-is if you already have the FULL entry. -->
+  <script id="timeline-bg-json" type="application/json">
+    {"FULL":"{{BASE64_REPLACED_HERE}}"}
+  </script>
 
-<script type="text/babel">
-const { useState } = React;
+  <div id="root" class="app"></div>
 
-// helpers
-const parseDateLocal = s => s ? new Date(s+'T00:00:00') : null;
-const fmt = d => d ? d.toLocaleDateString() : '';
-const addDays = (d,n) => { const r = new Date(d); r.setDate(r.getDate()+n); return r; };
-const addWeeks = (d,w) => addDays(d,w*7);
-const calcWeeks = n => { const c = Number(n)||0; if(c===0) return 0; if(c<=10) return 1; if(c<=20) return 2; return 3; };
+  <script type="text/babel">
+    const { useState } = React;
 
-function App(){
-  const [mode,setMode] = useState(null);
-  const [form,setForm] = useState({ poDate:'', endMigrationDate:'', s1022:0,s1024:0,e1050:0,e1080:0,lpars:0 });
-  const [timeline,setTimeline] = useState(null);
-  const [error,setError] = useState('');
+    const getBase64 = () => {
+      try {
+        const el = document.getElementById('timeline-bg-json');
+        if(!el) return null;
+        const json = JSON.parse(el.textContent || '{}');
+        if(json.FULL && json.FULL.length>50) return 'data:image/png;base64,' + json.FULL;
+        // support chunked keys (PART1..PART5)
+        const parts = [];
+        for(let i=1;i<=10;i++){
+          const k = 'PART'+i;
+          if(json[k]) parts.push(json[k]);
+        }
+        if(parts.length) return 'data:image/png;base64,' + parts.join('');
+        return null;
+      } catch(e){
+        console.error('bg read error', e);
+        return null;
+      }
+    };
 
-  function handleChange(e){
-    const {name,value,type} = e.target;
-    setForm(f=>({ ...f, [name]: (type==='range' || type==='number') ? Number(value) : value }));
-  }
+    function App(){
+      const [poDate,setPoDate] = useState('');
+      const [endDate,setEndDate] = useState('');
+      const [timeline,setTimeline] = useState(null);
+      const [err,setErr] = useState('');
 
-  function validate(){
-    if(!mode){ setError('Choose PO Received or End of Migration'); return false; }
-    if(mode==='po' && !form.poDate){ setError('Enter PO Received Date'); return false; }
-    if(mode==='end' && !form.endMigrationDate){ setError('Enter End of Migration Date'); return false; }
-    setError(''); return true;
-  }
+      const compute = (mode) => {
+        if(mode==='po' && !poDate){ setErr('Enter PO date'); return; }
+        if(mode==='end' && !endDate){ setErr('Enter End date'); return; }
+        setErr('');
+        const parse = s => s ? new Date(s+'T00:00:00') : null;
+        let po, build, install, end;
+        if(mode==='po'){
+          po = parse(poDate);
+          build = new Date(po); build.setDate(build.getDate()+21);
+          install = new Date(build); install.setDate(install.getDate()+14);
+          end = new Date(install); end.setDate(end.getDate()+10);
+        } else {
+          end = parse(endDate);
+          install = new Date(end); install.setDate(install.getDate()-10);
+          build = new Date(install); build.setDate(build.getDate()-14);
+          po = new Date(build); po.setDate(po.getDate()-21);
+        }
+        setTimeline({po,build,install,end});
+      };
 
-  function generate(){
-    if(!validate()) return;
-    let po, buildShip, install, endMigration;
-    if(mode==='po'){
-      po = parseDateLocal(form.poDate);
-      buildShip = addDays(po,21);
-      install = new Date(buildShip);
-      install = addWeeks(install, calcWeeks(form.s1022));
-      install = addWeeks(install, calcWeeks(form.s1024));
-      install = addWeeks(install, calcWeeks(form.e1050));
-      install = addWeeks(install, calcWeeks(form.e1080));
-      endMigration = addDays(install, 5 + Math.floor((form.lpars||0)/12));
-    } else {
-      endMigration = parseDateLocal(form.endMigrationDate);
-      install = addDays(endMigration, -(5 + Math.floor((form.lpars||0)/12)));
-      install = addWeeks(install, -calcWeeks(form.e1080));
-      install = addWeeks(install, -calcWeeks(form.e1050));
-      install = addWeeks(install, -calcWeeks(form.s1024));
-      install = addWeeks(install, -calcWeeks(form.s1022));
-      buildShip = addDays(install, -21);
-      po = addDays(buildShip, -21);
-    }
-    setTimeline({ po, buildShip, install, endMigration });
-  }
+      const downloadPPT = async () => {
+        if(!timeline){ alert('Generate timeline first'); return; }
+        const P = window.PptxGenJS?.default || window.PptxGenJS;
+        if(!P){ alert('pptxgenjs missing'); return; }
+        const bg = getBase64();
+        if(!bg){ alert('Background image missing in timeline-bg-json. Paste the Base64 into the JSON block.'); return; }
 
-  // Rebuild every object in PPT (not a baked PNG). Best-effort pixel positions and styles to match screenshot.
-  async function downloadPPT(){
-    if(!timeline) return alert('Generate timeline first');
+        const pptx = new P();
+        const slide = pptx.addSlide();
+        slide.background = { color:'FFFFFF' };
 
-    const P = window.PptxGenJS?.default || window.PptxGenJS;
-    if(!P) return alert('pptxgenjs missing');
+        // Add background PNG centered (scale to width leave top whitespace to match screenshot)
+        slide.addImage({ data: bg, x:0.6, y:0.8, w:9.0, h:5.1 });
 
-    // Use the exact Slide1.png background for 100% screenshot matching
-    const BASE64 = window.TIMELINE_BG_FULL || window.TIMELINE_BG || null;
-    if(!BASE64){
-      return alert('Base64 PNG background missing. Please ensure it is loaded.');
-    }
+        // Title (match screenshot)
+        slide.addText('IBM Power Timeline', { x:0.5, y:0.2, w:9, fontSize:40, bold:true, align:'center', fontFace:'IBM Plex Sans' });
 
-    const pptx = new P();
-    const slide = pptx.addSlide();
+        // Date text positions that match the image layout (these are tuned values)
+        slide.addText(formatDate(timeline.po), { x:1.2, y:2.6, w:1.6, fontSize:14, bold:true, fontFace:'IBM Plex Sans', align:'center', color:'444444' });
+        slide.addText(formatDate(timeline.build), { x:3.2, y:2.6, w:1.6, fontSize:14, bold:true, fontFace:'IBM Plex Sans', align:'center', color:'444444' });
+        slide.addText(formatDate(timeline.install), { x:5.0, y:2.6, w:1.6, fontSize:14, bold:true, fontFace:'IBM Plex Sans', align:'center', color:'444444' });
+        slide.addText(formatDate(timeline.end), { x:6.8, y:2.6, w:1.6, fontSize:14, bold:true, fontFace:'IBM Plex Sans', align:'center', color:'444444' });
 
-    // White slide
-    slide.background = { color: 'FFFFFF' };
+        // Bottom labels
+        slide.addText('PO Received', { x:1.0, y:4.6, w:1.8, fontSize:13, bold:true, fontFace:'IBM Plex Sans', align:'center', color:'E67E22' });
+        slide.addText('Installation', { x:4.6, y:4.6, w:2.0, fontSize:13, bold:true, fontFace:'IBM Plex Sans', align:'center', color:'1BA2C1' });
 
-    // Insert screenshot PNG EXACTLY at native resolution scaling
-    slide.addImage({
-      data: 'data:image/png;base64,' + BASE64,
-      x: 0.30,  // shifted for better framing
-      y: 0.20,
-      w: 10.20, // upscale → sharper rendering in PPT
-      h: 5.74   // upscale height proportionally
-    
-    });
+        await pptx.writeFile({ fileName:'IBM_Power_Timeline_PerfectMatch.pptx' });
+      };
 
-    // Date overlay positions — pixel-perfect mapped to screenshot
-    slide.addText(fmt(timeline.po), {
-      x: 1.43, y: 2.39, w: 1.65,
-      fontSize: 15, bold: true,
-      fontFace: 'IBM Plex Sans', align: 'center', color: '000000'
-    });
+      const formatDate = (d) => {
+        if(!d) return '';
+        return d.toLocaleDateString();
+      };
 
-    slide.addText(fmt(timeline.buildShip), {
-      x: 3.23, y: 2.39, w: 1.65,
-      fontSize: 15, bold: true,
-      fontFace: 'IBM Plex Sans', align: 'center', color: '000000'
-    });
-
-    slide.addText(fmt(timeline.install), {
-      x: 4.95, y: 2.39, w: 1.65,
-      fontSize: 15, bold: true,
-      fontFace: 'IBM Plex Sans', align: 'center', color: '000000'
-    });
-
-    slide.addText(fmt(timeline.endMigration), {
-      x: 6.82, y: 2.39, w: 1.75,
-      fontSize: 15, bold: true,
-      fontFace: 'IBM Plex Sans', align: 'center', color: '000000'
-    });
-
-    await pptx.writeFile({ fileName: 'IBM_Power_Timeline_PERFECT_MATCH.pptx' });({ fileName: 'IBM_Power_Timeline_recreated.pptx' });({ fileName: 'IBM_Power_Timeline_recreated.pptx' });
-  }
-
-  return (
-    <div className="min-h-screen p-8 flex items-start justify-center">
-      <div className="w-full max-w-5xl bg-white shadow rounded-lg overflow-hidden">
-        <div className="p-6 border-b">
-          <h1 className="text-2xl font-bold">IBM Power Timeline — Rebuild (Option A)</h1>
-          <p className="text-sm text-gray-600 mt-1">Pixel-focused PPT generator (recreates objects instead of using a single PNG). Dates will inject into the PPT as dynamic text boxes.</p>
-        </div>
-
-        <div className="p-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Select which date you enter</label>
-              <div className="flex items-center space-x-4 mt-2">
-                <label className="inline-flex items-center"><input type="radio" name="mode" checked={mode==='po'} onChange={()=>setMode('po')} /> <span className="ml-2">PO Received Date</span></label>
-                <label className="inline-flex items-center"><input type="radio" name="mode" checked={mode==='end'} onChange={()=>setMode('end')} /> <span className="ml-2">End of Migration Date</span></label>
-              </div>
-
-              {mode==='po' && (
-                <div className="mt-4">
-                  <label className="text-sm">PO Received Date</label>
-                  <input type="date" name="poDate" value={form.poDate} onChange={handleChange} className="mt-1 w-full border p-2 rounded" />
-                </div>
-              )}
-
-              {mode==='end' && (
-                <div className="mt-4">
-                  <label className="text-sm">End of Migration Date</label>
-                  <input type="date" name="endMigrationDate" value={form.endMigrationDate} onChange={handleChange} className="mt-1 w-full border p-2 rounded" />
-                </div>
-              )}
-
-            </div>
-
-            <div>
-              <div className="grid grid-cols-1 gap-4">
-                <div>
-                  <label className="block text-sm">S1022/1122 — <b>{form.s1022}</b></label>
-                  <input type="range" name="s1022" min="0" max="25" value={form.s1022} onChange={handleChange} className="w-full" />
-                </div>
-                <div>
-                  <label className="block text-sm">S1024/1124 — <b>{form.s1024}</b></label>
-                  <input type="range" name="s1024" min="0" max="25" value={form.s1024} onChange={handleChange} className="w-full" />
-                </div>
-                <div>
-                  <label className="block text-sm">E1050/1150 — <b>{form.e1050}</b></label>
-                  <input type="range" name="e1050" min="0" max="20" value={form.e1050} onChange={handleChange} className="w-full" />
-                </div>
-                <div>
-                  <label className="block text-sm">E1080/1180 — <b>{form.e1080}</b></label>
-                  <input type="range" name="e1080" min="0" max="10" value={form.e1080} onChange={handleChange} className="w-full" />
-                </div>
-                <div>
-                  <label className="block text-sm">LPAR Count — <b>{form.lpars}</b></label>
-                  <input type="range" name="lpars" min="0" max="200" value={form.lpars} onChange={handleChange} className="w-full" />
-                </div>
-              </div>
-            </div>
+      return (
+        <div className="card">
+          <div className="header">
+            <h1>IBM Power — Timeline</h1>
           </div>
 
-          {error && <div className="mt-4 text-red-600">{error}</div>}
+          <div className="body">
+            <div style={{ display:'flex', gap:24, alignItems:'flex-start' }}>
+              <div style={{ flex:1 }}>
+                <div style={{ marginBottom:10 }}>
+                  <strong>Enter Dates</strong>
+                </div>
 
-          <div className="mt-6 flex justify-end space-x-3">
-            <button onClick={() => { setForm({ poDate:'', endMigrationDate:'', s1022:0,s1024:0,e1050:0,e1080:0,lpars:0 }); setTimeline(null); setMode(null); }} className="px-4 py-2 border rounded">Reset</button>
-            <button onClick={generate} className="px-4 py-2 bg-indigo-600 text-white rounded">Generate Timeline</button>
-          </div>
+                <div style={{ display:'flex', gap:8, marginBottom:8 }}>
+                  <input type="date" value={poDate} onChange={e=>setPoDate(e.target.value)} style={{ padding:8, borderRadius:6, border:'1px solid #ddd', flex:1 }} />
+                  <button className="btn-ghost" onClick={()=>compute('po')}>Compute from PO</button>
+                </div>
 
-          {timeline && (
-            <div className="mt-8 p-4 border rounded bg-gray-50">
-              <div className="grid grid-cols-2 gap-4">
-                <div>PO Received: <b>{fmt(timeline.po)}</b></div>
-                <div>Build / Ship: <b>{fmt(timeline.buildShip)}</b></div>
-                <div>Installation: <b>{fmt(timeline.install)}</b></div>
-                <div>End Migration: <b>{fmt(timeline.endMigration)}</b></div>
+                <div style={{ display:'flex', gap:8 }}>
+                  <input type="date" value={endDate} onChange={e=>setEndDate(e.target.value)} style={{ padding:8, borderRadius:6, border:'1px solid #ddd', flex:1 }} />
+                  <button className="btn-ghost" onClick={()=>compute('end')}>Compute from End</button>
+                </div>
+
+                <div style={{ marginTop:12, display:'flex', gap:8 }}>
+                  <button className="btn-primary" onClick={downloadPPT}>Download PPT (Perfect-Match)</button>
+                  <button className="btn-ghost" onClick={()=>{ location.reload(); }}>Reload</button>
+                </div>
+
+                {err && <div className="debug">{err}</div>}
+
+                {timeline && (
+                  <div style={{ marginTop:14 }}>
+                    <div>PO: <b>{formatDate(timeline.po)}</b></div>
+                    <div>Build / Ship: <b>{formatDate(timeline.build)}</b></div>
+                    <div>Installation: <b>{formatDate(timeline.install)}</b></div>
+                    <div>End: <b>{formatDate(timeline.end)}</b></div>
+                  </div>
+                )}
+
+                <div style={{ marginTop:14, fontSize:12, color:'#666' }}>
+                  Tip: if the PPT text looks slightly different, install "IBM Plex Sans" locally. The exported PPT uses that font name; PowerPoint will fallback when not available.
+                </div>
               </div>
 
-              <div className="mt-6 flex justify-end">
-                <button onClick={downloadPPT} className="px-4 py-2 bg-green-600 text-white rounded">Download PPT — Pixel Recreated</button>
+              <div style={{ width:520 }}>
+                <div className="timeline-preview" aria-hidden>
+                  <div className="timeline-track"></div>
+                  <div className="bubble pos-po" style={{ top:'34%', left:'10%' }}>
+                    <div className="inner" style={{ background:'linear-gradient(180deg,#f6a426,#df7b2f)' }}>12/3/2025</div>
+                  </div>
+                  <div className="bubble pos-build" style={{ top:'34%', left:'33%' }}>
+                    <div className="inner" style={{ background:'linear-gradient(180deg,#b46ac3,#7d4aa8)' }}>12/24/2025</div>
+                  </div>
+                  <div className="bubble pos-install" style={{ top:'34%', left:'56%' }}>
+                    <div className="inner" style={{ background:'linear-gradient(180deg,#4ec3d0,#1b9fb2)' }}>1/7/2026</div>
+                  </div>
+                  <div className="bubble pos-end" style={{ top:'34%', left:'80%' }}>
+                    <div className="inner" style={{ background:'linear-gradient(180deg,#4b77b3,#17365f)' }}>1/23/2026</div>
+                  </div>
+
+                  <div className="label-top" style={{ top:'6%', left:'30%', width:180 }}>Build / Ship<br/><span style={{ fontSize:12, fontWeight:400, color:'#666' }}>You can edit the text for this timeline milestone.</span></div>
+                  <div className="label-top" style={{ top:'6%', left:'68%', width:180 }}>End of Migration<br/><span style={{ fontSize:12, fontWeight:400, color:'#666' }}>You can edit the text for this timeline milestone.</span></div>
+
+                  <div className="label-bottom" style={{ top:'74%', left:'8%', width:200 }}>PO Received</div>
+                  <div className="label-bottom" style={{ top:'74%', left:'52%', width:200 }}>Installation</div>
+
+                </div>
               </div>
             </div>
-          )}
 
+            <div style={{ marginTop:16, fontSize:12, color:'#666' }}>
+              Debug: open developer console for runtime errors. If the PNG is not shown in the exported PPT, paste the base64 into the JSON block at the top.
+            </div>
+
+          </div>
         </div>
-      </div>
-    </div>
-  );
-}
+      );
+    }
 
-ReactDOM.createRoot(document.getElementById('root')).render(<App />);
-</script>
+    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+  </script>
 </body>
 </html>
