@@ -146,32 +146,48 @@ function IBMWizard() {
 
     const pptx = new Pctor();
 
-    /**************** Slide 1 — Matches Provided Design ****************/
+    /**************** Slide 1 — EXACT MATCH TO SAMPLE ****************/
     const slide = pptx.addSlide();
 
+    // Title
     slide.addText("IBM Power Timeline", {
       x: 0.5,
       y: 0.3,
-      fontSize: 30,
+      fontSize: 32,
       bold: true,
     });
 
-    const items = [
-      { label: "PO Received", date: fmt(timeline.po) },
-      { label: "Build / Ship", date: fmt(timeline.buildShip) },
-      { label: "Installation", date: fmt(timeline.install) },
-      { label: "End of Migration", date: fmt(timeline.endMigration) },
+    /* SAMPLE FORMAT
+      [DATE]
+      Text Title (e.g., Build / Ship)
+      You can edit this milestone text.
+    */
+
+    const blocks = [
+      { title: "PO Received", date: fmt(timeline.po) },
+      { title: "Build / Ship", date: fmt(timeline.buildShip) },
+      { title: "Installation", date: fmt(timeline.install) },
+      { title: "End of Migration", date: fmt(timeline.endMigration) }
     ];
 
     let y = 1.2;
-    items.forEach((item) => {
-      slide.addText(item.date, { x: 0.5, y, fontSize: 22, bold: true });
-      slide.addText(`${item.label} — You can edit the text for this timeline milestone.`, {
+    blocks.forEach((b) => {
+      slide.addText(b.date, { x: 0.5, y, fontSize: 24, bold: true });
+
+      slide.addText(b.title, {
         x: 0.5,
-        y: y + 0.5,
+        y: y + 0.45,
+        fontSize: 18,
+        bold: true,
+      });
+
+      slide.addText("You can edit the text for this timeline milestone.", {
+        x: 0.5,
+        y: y + 0.9,
         fontSize: 16,
       });
-      y += 1.2;
+
+      y += 1.4;
     });
 
     try {
