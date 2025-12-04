@@ -25,8 +25,85 @@ const { useState } = React;
 
 // Utilities
 const parseDateLocal = (s) => { if (!s) return null; const [y,m,d] = s.split('-').map(Number); return new Date(y, m-1, d); };
-const addDays = (d, n) => { const r = new Date(d); r.setDate(r.getDate()+n); return r; };
-const addWeeks = (d, w) => addDays(d, w*7);
+
+// US Federal Holidays (fixed dates and calculated floating holidays)
+const getUSHolidays = (year) => {
+  const holidays = [];
+  
+  // Fixed holidays
+  holidays.push(new Date(year, 0, 1));   // New Year's Day
+  holidays.push(new Date(year, 6, 4));   // Independence Day
+  holidays.push(new Date(year, 10, 11)); // Veterans Day
+  holidays.push(new Date(year, 11, 25)); // Christmas Day
+  
+  // MLK Day - 3rd Monday of January
+  let d = new Date(year, 0, 1);
+  let mondayCount = 0;
+  while (mondayCount < 3) { if (d.getDay() === 1) mondayCount++; if (mondayCount < 3) d.setDate(d.getDate() + 1); }
+  holidays.push(new Date(d));
+  
+  // Presidents Day - 3rd Monday of February
+  d = new Date(year, 1, 1);
+  mondayCount = 0;
+  while (mondayCount < 3) { if (d.getDay() === 1) mondayCount++; if (mondayCount < 3) d.setDate(d.getDate() + 1); }
+  holidays.push(new Date(d));
+  
+  // Memorial Day - Last Monday of May
+  d = new Date(year, 5, 0); // Last day of May
+  while (d.getDay() !== 1) d.setDate(d.getDate() - 1);
+  holidays.push(new Date(d));
+  
+  // Labor Day - 1st Monday of September
+  d = new Date(year, 8, 1);
+  while (d.getDay() !== 1) d.setDate(d.getDate() + 1);
+  holidays.push(new Date(d));
+  
+  // Columbus Day - 2nd Monday of October
+  d = new Date(year, 9, 1);
+  mondayCount = 0;
+  while (mondayCount < 2) { if (d.getDay() === 1) mondayCount++; if (mondayCount < 2) d.setDate(d.getDate() + 1); }
+  holidays.push(new Date(d));
+  
+  // Thanksgiving - 4th Thursday of November
+  d = new Date(year, 10, 1);
+  let thursdayCount = 0;
+  while (thursdayCount < 4) { if (d.getDay() === 4) thursdayCount++; if (thursdayCount < 4) d.setDate(d.getDate() + 1); }
+  holidays.push(new Date(d));
+  
+  return holidays;
+};
+
+// Check if a date is a weekend (Saturday=6, Sunday=0)
+const isWeekend = (d) => d.getDay() === 0 || d.getDay() === 6;
+
+// Check if a date is a US holiday
+const isHoliday = (d) => {
+  const dominated = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  const holidays = getUSHolidays(d.getFullYear());
+  return holidays.some(h => h.getTime() === dominated.getTime());
+};
+
+// Check if a date is a business day (not weekend, not holiday)
+const isBusinessDay = (d) => !isWeekend(d) && !isHoliday(d);
+
+// Add business days (skipping weekends and holidays)
+const addBusinessDays = (d, n) => {
+  const result = new Date(d);
+  const direction = n >= 0 ? 1 : -1;
+  let remaining = Math.abs(n);
+  
+  while (remaining > 0) {
+    result.setDate(result.getDate() + direction);
+    if (isBusinessDay(result)) {
+      remaining--;
+    }
+  }
+  return result;
+};
+
+// Add weeks in business days (1 week = 5 business days)
+const addBusinessWeeks = (d, w) => addBusinessDays(d, w * 5);
+
 const calcWeeks = (n) => { const c = Number(n)||0; if (c===0) return 0; if (c<=10) return 1; if (c<=20) return 2; return 3; };
 const fmt = (d) => (d instanceof Date ? d.toLocaleDateString() : '');
 
@@ -60,21 +137,21 @@ function IBMWizard(){
     let po, buildShip, install, endMigration;
     if (mode==='po'){
       po = parseDateLocal(form.poDate);
-      buildShip = addDays(po, 21);
-      install = addWeeks(buildShip, calcWeeks(form.s1022));
-      install = addWeeks(install, calcWeeks(form.s1024));
-      install = addWeeks(install, calcWeeks(form.e1050));
-      install = addWeeks(install, calcWeeks(form.e1080));
-      endMigration = addDays(install, 5 + Math.floor((form.lpars||0)/12));
+      buildShip = addBusinessDays(po, 21);
+      install = addBusinessWeeks(buildShip, calcWeeks(form.s1022));
+      install = addBusinessWeeks(install, calcWeeks(form.s1024));
+      install = addBusinessWeeks(install, calcWeeks(form.e1050));
+      install = addBusinessWeeks(install, calcWeeks(form.e1080));
+      endMigration = addBusinessDays(install, 5 + Math.floor((form.lpars||0)/12));
     } else {
       endMigration = parseDateLocal(form.endMigrationDate);
-      install = addDays(endMigration, -(5 + Math.floor((form.lpars||0)/12)));
-      install = addWeeks(install, -calcWeeks(form.e1080));
-      install = addWeeks(install, -calcWeeks(form.e1050));
-      install = addWeeks(install, -calcWeeks(form.s1024));
-      install = addWeeks(install, -calcWeeks(form.s1022));
-      buildShip = addDays(install, -21);
-      po = addDays(buildShip, -21);
+      install = addBusinessDays(endMigration, -(5 + Math.floor((form.lpars||0)/12)));
+      install = addBusinessWeeks(install, -calcWeeks(form.e1080));
+      install = addBusinessWeeks(install, -calcWeeks(form.e1050));
+      install = addBusinessWeeks(install, -calcWeeks(form.s1024));
+      install = addBusinessWeeks(install, -calcWeeks(form.s1022));
+      buildShip = addBusinessDays(install, -21);
+      po = addBusinessDays(buildShip, -21);
     }
     setTimeline({ po, buildShip, install, endMigration });
     setStep(3);
@@ -147,60 +224,60 @@ function IBMWizard(){
     }
     
     // Vertical lines going DOWN from dots 1 and 3 (PO Received, Installation)
-    drawVerticalDottedLine(dot1X, dotY + dotSize/2, 4.5);
-    drawVerticalDottedLine(dot3X, dotY + dotSize/2, 4.5);
+    drawVerticalDottedLine(dot1X, dotY + dotSize/2, 3.9);
+    drawVerticalDottedLine(dot3X, dotY + dotSize/2, 3.9);
     
     // Vertical lines going UP from dots 2 and 4 (Build/Ship, End of Migration)
-    drawVerticalDottedLine(dot2X, dotY - dotSize/2, 1.5);
-    drawVerticalDottedLine(dot4X, dotY - dotSize/2, 1.5);
+    drawVerticalDottedLine(dot2X, dotY - dotSize/2, 2.1);
+    drawVerticalDottedLine(dot4X, dotY - dotSize/2, 2.1);
     
     // TOP LABELS (Build/Ship and End of Migration) - dates above, labels below
     // Build/Ship
     slide.addText(fmt(timeline.buildShip), {
-      x: dot2X - 1.0, y: 1.15, w: 2.0, h: 0.7,
+      x: dot2X - 1.0, y: 1.15, w: 2.0, h: 0.4,
       fontSize: 18, bold: true, color: "000000",
       align: "center", fontFace: "Arial"
     });
     slide.addText("Build / Ship", {
-      x: dot2X - 1.0, y: 1.75, w: 2.0, h: 0.3,
-      fontSize: 12, color: "000000",
+      x: dot2X - 1.0, y: 1.5, w: 2.0, h: 0.3,
+      fontSize: 12, bold: true, color: "000000",
       align: "center", fontFace: "Arial"
     });
     
     // End of Migration
     slide.addText(fmt(timeline.endMigration), {
-      x: dot4X - 1.0, y: 1.15, w: 2.0, h: 0.7,
+      x: dot4X - 1.0, y: 1.15, w: 2.0, h: 0.4,
       fontSize: 18, bold: true, color: "000000",
       align: "center", fontFace: "Arial"
     });
     slide.addText("End of Migration", {
-      x: dot4X - 1.0, y: 1.75, w: 2.0, h: 0.3,
-      fontSize: 12, color: "000000",
+      x: dot4X - 1.0, y: 1.5, w: 2.0, h: 0.3,
+      fontSize: 12, bold: true, color: "000000",
       align: "center", fontFace: "Arial"
     });
     
     // BOTTOM LABELS (PO Received and Installation) - dates above, labels below
     // PO Received
     slide.addText(fmt(timeline.po), {
-      x: dot1X - 1.0, y: 4.1, w: 2.0, h: 0.7,
+      x: dot1X - 1.0, y: 4.0, w: 2.0, h: 0.4,
       fontSize: 18, bold: true, color: "000000",
       align: "center", fontFace: "Arial"
     });
     slide.addText("PO Received", {
-      x: dot1X - 1.0, y: 4.7, w: 2.0, h: 0.3,
-      fontSize: 12, color: "000000",
+      x: dot1X - 1.0, y: 4.35, w: 2.0, h: 0.3,
+      fontSize: 12, bold: true, color: "000000",
       align: "center", fontFace: "Arial"
     });
     
     // Installation
     slide.addText(fmt(timeline.install), {
-      x: dot3X - 1.0, y: 4.1, w: 2.0, h: 0.7,
+      x: dot3X - 1.0, y: 4.0, w: 2.0, h: 0.4,
       fontSize: 18, bold: true, color: "000000",
       align: "center", fontFace: "Arial"
     });
     slide.addText("Installation", {
-      x: dot3X - 1.0, y: 4.7, w: 2.0, h: 0.3,
-      fontSize: 12, color: "000000",
+      x: dot3X - 1.0, y: 4.35, w: 2.0, h: 0.3,
+      fontSize: 12, bold: true, color: "000000",
       align: "center", fontFace: "Arial"
     });
     
