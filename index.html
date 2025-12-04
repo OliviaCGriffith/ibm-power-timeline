@@ -1,4 +1,4 @@
-<!-- Fixed: Clean IBM Power Timeline — full working canvas (syntax errors resolved) -->
+<!-- IBM Power Timeline — Corrected path to match template -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -8,32 +8,20 @@
   <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-  <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/pptxgenjs@3.11.0/dist/pptxgen.bundle.js"></script>
-
-  <!-- Timeline background JSON holder (multi-chunk safe). Fill the PARTs with your base64 chunks. -->
-  <script id="timeline-bg-json" type="application/json">{"TIMELINE_BG_PART1":"","TIMELINE_BG_PART2":"","TIMELINE_BG_PART3":"","TIMELINE_BG_PART4":"","TIMELINE_BG_PART5":""}</script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f9fafb; }
+    input[type="range"] { width: 100%; cursor: pointer; }
+    input[type="date"] { width: 100%; padding: 12px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 14px; }
+    input[type="radio"] { cursor: pointer; }
+  </style>
 </head>
-<body class="bg-gray-50">
+<body>
 <div id="root"></div>
 
 <script type="text/babel">
 const { useState } = React;
-
-// Build full base64 data URL from JSON parts
-const getTimelineBgData = () => {
-  try {
-    const el = document.getElementById('timeline-bg-json');
-    if (!el) return null;
-    const json = JSON.parse(el.textContent || '{}');
-    const parts = [json.TIMELINE_BG_PART1||'', json.TIMELINE_BG_PART2||'', json.TIMELINE_BG_PART3||'', json.TIMELINE_BG_PART4||'', json.TIMELINE_BG_PART5||''];
-    const base = parts.join('');
-    return base ? 'data:image/png;base64,' + base : null;
-  } catch (e) {
-    console.error('Failed to read timeline-bg-json', e);
-    return null;
-  }
-};
 
 // Utilities
 const parseDateLocal = (s) => { if (!s) return null; const [y,m,d] = s.split('-').map(Number); return new Date(y, m-1, d); };
@@ -42,9 +30,15 @@ const addWeeks = (d, w) => addDays(d, w*7);
 const calcWeeks = (n) => { const c = Number(n)||0; if (c===0) return 0; if (c<=10) return 1; if (c<=20) return 2; return 3; };
 const fmt = (d) => (d instanceof Date ? d.toLocaleDateString() : '');
 
+// SVG icons - colored versions
+const documentIconOrange = `data:image/svg+xml;base64,${btoa(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#E8833A"><path d="M14 2H6C4.9 2 4 2.9 4 4V20C4 21.1 4.9 22 6 22H18C19.1 22 20 21.1 20 20V8L14 2ZM16 18H8V16H16V18ZM16 14H8V12H16V14ZM13 9V3.5L18.5 9H13Z"/></svg>`)}`;
+const truckIconPurple = `data:image/svg+xml;base64,${btoa(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#8064A6"><path d="M20 8H17V4H3C1.9 4 1 4.9 1 6V17H3C3 18.66 4.34 20 6 20S9 18.66 9 17H15C15 18.66 16.34 20 18 20S21 18.66 21 17H23V12L20 8ZM6 18.5C5.17 18.5 4.5 17.83 4.5 17S5.17 15.5 6 15.5 7.5 16.17 7.5 17 6.83 18.5 6 18.5ZM19.5 9.5L21.46 12H17V9.5H19.5ZM18 18.5C17.17 18.5 16.5 17.83 16.5 17S17.17 15.5 18 15.5 19.5 16.17 19.5 17 18.83 18.5 18 18.5Z"/></svg>`)}`;
+const gearIconTeal = `data:image/svg+xml;base64,${btoa(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#3BA0BB"><path d="M19.14 12.94C19.18 12.64 19.2 12.33 19.2 12C19.2 11.68 19.18 11.36 19.13 11.06L21.16 9.48C21.34 9.34 21.39 9.07 21.28 8.87L19.36 5.55C19.24 5.33 18.99 5.26 18.77 5.33L16.38 6.29C15.88 5.91 15.35 5.59 14.76 5.35L14.4 2.81C14.36 2.57 14.16 2.4 13.92 2.4H10.08C9.84 2.4 9.65 2.57 9.61 2.81L9.25 5.35C8.66 5.59 8.12 5.92 7.63 6.29L5.24 5.33C5.02 5.25 4.77 5.33 4.65 5.55L2.74 8.87C2.62 9.08 2.66 9.34 2.86 9.48L4.89 11.06C4.84 11.36 4.8 11.69 4.8 12C4.8 12.31 4.82 12.64 4.87 12.94L2.84 14.52C2.66 14.66 2.61 14.93 2.72 15.13L4.64 18.45C4.76 18.67 5.01 18.74 5.23 18.67L7.62 17.71C8.12 18.09 8.65 18.41 9.24 18.65L9.6 21.19C9.65 21.43 9.84 21.6 10.08 21.6H13.92C14.16 21.6 14.36 21.43 14.39 21.19L14.75 18.65C15.34 18.41 15.88 18.09 16.37 17.71L18.76 18.67C18.98 18.75 19.23 18.67 19.35 18.45L21.27 15.13C21.39 14.91 21.34 14.66 21.15 14.52L19.14 12.94ZM12 15.6C10.02 15.6 8.4 13.98 8.4 12C8.4 10.02 10.02 8.4 12 8.4C13.98 8.4 15.6 10.02 15.6 12C15.6 13.98 13.98 15.6 12 15.6Z"/></svg>`)}`;
+const flagIconRed = `data:image/svg+xml;base64,${btoa(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#C94A4A"><path d="M14.4 6L14 4H5V21H7V14H12.6L13 16H20V6H14.4Z"/></svg>`)}`;
+
 function IBMWizard(){
   const [step, setStep] = useState(1);
-  const [mode, setMode] = useState(null); // 'po' or 'end'
+  const [mode, setMode] = useState(null);
   const [form, setForm] = useState({ poDate:'', endMigrationDate:'', s1022:0, s1024:0, e1050:0, e1080:0, lpars:0 });
   const [timeline, setTimeline] = useState(null);
   const [error, setError] = useState('');
@@ -86,161 +80,263 @@ function IBMWizard(){
     setStep(3);
   };
 
-  // download PPT: pixel-perfect reproduction of screenshot, dynamic dates
   const downloadPPT = async () => {
     if (!timeline) return alert('Generate the timeline first.');
 
     const Pctor = window.PptxGenJS?.default || window.PptxGenJS;
-    if (!Pctor) return alert('PptxGenJS library missing. Run locally.');
-
-    // assemble base64 image
-    const TIMELINE_BG_DATA = getTimelineBgData();
-
-    if (!TIMELINE_BG_DATA) {
-      // Fallback: try prompting user to paste base64 into console variable
-      alert('Timeline background image missing. Please paste your base64 into the timeline-bg-json block in the page or upload the image.');
-      return;
-    }
+    if (!Pctor) return alert('PptxGenJS library missing.');
 
     const pptx = new Pctor();
+    pptx.layout = "LAYOUT_16x9";
+    pptx.title = "IBM Power Timeline";
+    
     const slide = pptx.addSlide();
-
-    // white background
-    slide.background = { color: 'FFFFFF' };
-
-    // background image centered/size to match screenshot
-    slide.addImage({ data: TIMELINE_BG_DATA, x:1.0, y:1.15, w:8.0, h:3.9 });
-
+    
+    // Beige/tan background
+    slide.background = { color: "E8E4DD" };
+    
     // Title
-    slide.addText('IBM Power Timeline', { x:0, y:0.35, w:10, fontSize:38, bold:true, align:'center' });
-
-    // top labels
-    slide.addText('Build / Ship', { x:3.9, y:1.05, w:2, fontSize:18, bold:true, color:'6A4FB3', align:'center' });
-    slide.addText('You can edit the text for\\nthis timeline milestone.', { x:3.9, y:1.25, w:2, fontSize:11, color:'444444', align:'center' });
-
-    slide.addText('End of Migration', { x:7.0, y:1.05, w:2, fontSize:18, bold:true, color:'C0392B', align:'center' });
-    slide.addText('You can edit the text for\\nthis timeline milestone.', { x:7.0, y:1.25, w:2, fontSize:11, color:'444444', align:'center' });
-
-    // center dates (dynamic)
-    slide.addText(fmt(timeline.po), { x:1.0, y:2.20, w:2.4, fontSize:16, bold:true, color:'444444', align:'center' });
-    slide.addText(fmt(timeline.buildShip), { x:3.0, y:2.20, w:2.4, fontSize:16, bold:true, color:'444444', align:'center' });
-    slide.addText(fmt(timeline.install), { x:5.0, y:2.20, w:2.4, fontSize:16, bold:true, color:'444444', align:'center' });
-    slide.addText(fmt(timeline.endMigration), { x:7.0, y:2.20, w:2.4, fontSize:16, bold:true, color:'444444', align:'center' });
-
-    // bottom labels
-    slide.addText('PO Received', { x:1.0, y:4.7, w:2.4, fontSize:16, bold:true, color:'E67E22', align:'center' });
-    slide.addText('You can edit the text for\\nthis timeline milestone.', { x:1.0, y:4.95, w:2.4, fontSize:11, color:'444444', align:'center' });
-
-    slide.addText('Installation', { x:5.0, y:4.7, w:2.4, fontSize:16, bold:true, color:'1BA2C1', align:'center' });
-    slide.addText('You can edit the text for\\nthis timeline milestone.', { x:5.0, y:4.95, w:2.4, fontSize:11, color:'444444', align:'center' });
-
+    slide.addText("IBM Power Timeline", {
+      x: 0, y: 0.3, w: 10, h: 0.8,
+      fontSize: 44, bold: true, color: "000000",
+      align: "center", fontFace: "Arial"
+    });
+    
+    // Positions for the 4 dots on horizontal line
+    const dotY = 2.9;  // Y position of horizontal line
+    const dot1X = 1.2;
+    const dot2X = 3.6;
+    const dot3X = 6.0;
+    const dot4X = 8.4;
+    const dotSize = 0.22;
+    
+    // Draw horizontal dotted line using small segments
+    const lineY = dotY;
+    const dashWidth = 0.08;
+    const gapWidth = 0.08;
+    let x = 0.3;
+    while (x < 9.7) {
+      slide.addShape(pptx.shapes.RECTANGLE, {
+        x: x, y: lineY - 0.02, w: dashWidth, h: 0.04,
+        fill: { color: "000000" }, line: { width: 0 }
+      });
+      x += dashWidth + gapWidth;
+    }
+    
+    // Draw the 4 main dots on the horizontal line
+    [dot1X, dot2X, dot3X, dot4X].forEach(dx => {
+      slide.addShape(pptx.shapes.OVAL, {
+        x: dx - dotSize/2, y: dotY - dotSize/2, w: dotSize, h: dotSize,
+        fill: { color: "000000" }, line: { width: 0 }
+      });
+    });
+    
+    // Vertical dotted lines
+    function drawVerticalDottedLine(x, startY, endY) {
+      const dashH = 0.08;
+      const gapH = 0.08;
+      let y = startY;
+      const direction = endY > startY ? 1 : -1;
+      while ((direction > 0 && y < endY) || (direction < 0 && y > endY)) {
+        slide.addShape(pptx.shapes.RECTANGLE, {
+          x: x - 0.02, y: direction > 0 ? y : y - dashH, w: 0.04, h: dashH,
+          fill: { color: "000000" }, line: { width: 0 }
+        });
+        y += direction * (dashH + gapH);
+      }
+    }
+    
+    // Vertical lines going DOWN from dots 1 and 3 (PO Received, Installation)
+    drawVerticalDottedLine(dot1X, dotY + dotSize/2, 4.5);
+    drawVerticalDottedLine(dot3X, dotY + dotSize/2, 4.5);
+    
+    // Vertical lines going UP from dots 2 and 4 (Build/Ship, End of Migration)
+    drawVerticalDottedLine(dot2X, dotY - dotSize/2, 1.5);
+    drawVerticalDottedLine(dot4X, dotY - dotSize/2, 1.5);
+    
+    // TOP LABELS (Build/Ship and End of Migration) - dates above, labels below
+    // Build/Ship
+    slide.addText(fmt(timeline.buildShip), {
+      x: dot2X - 1.0, y: 1.15, w: 2.0, h: 0.7,
+      fontSize: 18, bold: true, color: "000000",
+      align: "center", fontFace: "Arial"
+    });
+    slide.addText("Build / Ship", {
+      x: dot2X - 1.0, y: 1.75, w: 2.0, h: 0.3,
+      fontSize: 12, color: "000000",
+      align: "center", fontFace: "Arial"
+    });
+    
+    // End of Migration
+    slide.addText(fmt(timeline.endMigration), {
+      x: dot4X - 1.0, y: 1.15, w: 2.0, h: 0.7,
+      fontSize: 18, bold: true, color: "000000",
+      align: "center", fontFace: "Arial"
+    });
+    slide.addText("End of Migration", {
+      x: dot4X - 1.0, y: 1.75, w: 2.0, h: 0.3,
+      fontSize: 12, color: "000000",
+      align: "center", fontFace: "Arial"
+    });
+    
+    // BOTTOM LABELS (PO Received and Installation) - dates above, labels below
+    // PO Received
+    slide.addText(fmt(timeline.po), {
+      x: dot1X - 1.0, y: 4.1, w: 2.0, h: 0.7,
+      fontSize: 18, bold: true, color: "000000",
+      align: "center", fontFace: "Arial"
+    });
+    slide.addText("PO Received", {
+      x: dot1X - 1.0, y: 4.7, w: 2.0, h: 0.3,
+      fontSize: 12, color: "000000",
+      align: "center", fontFace: "Arial"
+    });
+    
+    // Installation
+    slide.addText(fmt(timeline.install), {
+      x: dot3X - 1.0, y: 4.1, w: 2.0, h: 0.7,
+      fontSize: 18, bold: true, color: "000000",
+      align: "center", fontFace: "Arial"
+    });
+    slide.addText("Installation", {
+      x: dot3X - 1.0, y: 4.7, w: 2.0, h: 0.3,
+      fontSize: 12, color: "000000",
+      align: "center", fontFace: "Arial"
+    });
+    
     await pptx.writeFile({ fileName: 'IBM_Power_Timeline.pptx' });
   };
 
+  // Styles
+  const styles = {
+    container: { minHeight: '100vh', backgroundColor: '#f9fafb', display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: '32px' },
+    card: { width: '100%', maxWidth: '896px', backgroundColor: 'white', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)', borderRadius: '16px', overflow: 'hidden' },
+    header: { background: 'linear-gradient(to right, #1e40af, #4f46e5)', padding: '32px', color: 'white' },
+    headerTitle: { fontSize: '28px', fontWeight: '800', margin: 0 },
+    content: { padding: '32px' },
+    error: { color: '#dc2626', marginBottom: '16px' },
+    radioGroup: { display: 'flex', gap: '24px', alignItems: 'center', marginBottom: '24px' },
+    radioLabel: { display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' },
+    grid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '24px', marginBottom: '24px' },
+    fieldLabel: { display: 'block', fontSize: '14px', fontWeight: '500', color: '#374151', marginBottom: '8px' },
+    fieldValue: { fontWeight: '700', color: '#4f46e5' },
+    buttonRow: { display: 'flex', justifyContent: 'flex-end', gap: '12px' },
+    buttonPrimary: { padding: '10px 24px', backgroundColor: '#4f46e5', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '14px', fontWeight: '500' },
+    buttonSecondary: { padding: '10px 24px', backgroundColor: 'white', color: '#374151', border: '1px solid #d1d5db', borderRadius: '6px', cursor: 'pointer', fontSize: '14px', fontWeight: '500' },
+    resultTitle: { fontSize: '24px', fontWeight: '600', marginBottom: '40px' },
+    timelineContainer: { position: 'relative', width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0 24px', marginTop: '80px' },
+    timelineBar: { position: 'absolute', left: 0, right: 0, height: '24px', background: 'linear-gradient(to right, #E8833A, #8064A6, #3BA0BB, #C94A4A)', borderRadius: '9999px' },
+    milestoneWrapper: { position: 'relative', zIndex: 10, display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', transform: 'translateY(-40px)' },
+    milestoneOuter: { width: '100px', height: '100px', borderRadius: '50%', backgroundColor: 'white', boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '3px solid #e5e7eb' },
+    milestoneInner: (color) => ({ width: '70px', height: '70px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: color, fontSize: '12px', fontWeight: '700' }),
+    milestoneLabel: { marginTop: '16px', color: '#374151', fontWeight: '600', fontSize: '14px' },
+    resultButtonRow: { display: 'flex', justifyContent: 'space-between', marginTop: '40px' }
+  };
+
+  const milestones = timeline ? [
+    { label: 'PO Received', date: fmt(timeline.po), color: '#E8833A' },
+    { label: 'Build / Ship', date: fmt(timeline.buildShip), color: '#8064A6' },
+    { label: 'Installation', date: fmt(timeline.install), color: '#3BA0BB' },
+    { label: 'End of Migration', date: fmt(timeline.endMigration), color: '#C94A4A' }
+  ] : [];
+
   return (
-    <div className="min-h-screen bg-gray-50 flex items-start justify-center p-8">
-      <div className="w-full max-w-5xl bg-white shadow-2xl rounded-2xl overflow-hidden">
-        <div className="bg-gradient-to-r from-blue-800 to-indigo-600 p-8 text-white">
-          <h1 className="text-3xl font-extrabold">IBM Power — Timeline</h1>
+    <div style={styles.container}>
+      <div style={styles.card}>
+        <div style={styles.header}>
+          <h1 style={styles.headerTitle}>IBM Power — Timeline</h1>
         </div>
 
-        <div className="p-8">
+        <div style={styles.content}>
           {step === 1 && (
-            <div className="space-y-6">
-              {error && <p className="text-red-600">{error}</p>}
+            <div>
+              {error && <p style={styles.error}>{error}</p>}
 
-              <div className="flex space-x-6 items-center">
-                <label className="flex items-center space-x-2">
+              <div style={styles.radioGroup}>
+                <label style={styles.radioLabel}>
                   <input type="radio" name="dateMode" checked={mode === 'po'} onChange={() => { setMode('po'); setForm(prev=>({...prev, endMigrationDate:''})); }} />
                   <span>PO Received Date</span>
                 </label>
-                <label className="flex items-center space-x-2">
+                <label style={styles.radioLabel}>
                   <input type="radio" name="dateMode" checked={mode === 'end'} onChange={() => { setMode('end'); setForm(prev=>({...prev, poDate:''})); }} />
                   <span>End of Migration Date</span>
                 </label>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div style={styles.grid}>
                 {mode === 'po' && (
                   <div>
-                    <label className="block text-sm font-medium text-gray-700">PO Received Date</label>
-                    <input name="poDate" type="date" value={form.poDate} onChange={handleChange} className="mt-2 w-full p-3 border rounded-lg" />
+                    <label style={styles.fieldLabel}>PO Received Date</label>
+                    <input name="poDate" type="date" value={form.poDate} onChange={handleChange} />
                   </div>
                 )}
-
                 {mode === 'end' && (
                   <div>
-                    <label className="block text-sm font-medium text-gray-700">End of Migration Date</label>
-                    <input name="endMigrationDate" type="date" value={form.endMigrationDate} onChange={handleChange} className="mt-2 w-full p-3 border rounded-lg" />
+                    <label style={styles.fieldLabel}>End of Migration Date</label>
+                    <input name="endMigrationDate" type="date" value={form.endMigrationDate} onChange={handleChange} />
                   </div>
                 )}
-
                 <div>
-                  <label className="block text-sm font-medium text-gray-700"># S1022/1122 — <span className="font-bold text-indigo-600">{form.s1022}</span></label>
-                  <input name="s1022" type="range" min="0" max="25" step="1" value={form.s1022} onChange={handleChange} className="mt-3 w-full" />
+                  <label style={styles.fieldLabel}># S1022/1122 — <span style={styles.fieldValue}>{form.s1022}</span></label>
+                  <input name="s1022" type="range" min="0" max="25" step="1" value={form.s1022} onChange={handleChange} />
                 </div>
-
                 <div>
-                  <label className="block text-sm font-medium text-gray-700"># S1024/1124 — <span className="font-bold text-indigo-600">{form.s1024}</span></label>
-                  <input name="s1024" type="range" min="0" max="25" step="1" value={form.s1024} onChange={handleChange} className="mt-3 w-full" />
+                  <label style={styles.fieldLabel}># S1024/1124 — <span style={styles.fieldValue}>{form.s1024}</span></label>
+                  <input name="s1024" type="range" min="0" max="25" step="1" value={form.s1024} onChange={handleChange} />
                 </div>
-
                 <div>
-                  <label className="block text-sm font-medium text-gray-700"># E1050/1150 — <span className="font-bold text-indigo-600">{form.e1050}</span></label>
-                  <input name="e1050" type="range" min="0" max="20" step="1" value={form.e1050} onChange={handleChange} className="mt-3 w-full" />
+                  <label style={styles.fieldLabel}># E1050/1150 — <span style={styles.fieldValue}>{form.e1050}</span></label>
+                  <input name="e1050" type="range" min="0" max="20" step="1" value={form.e1050} onChange={handleChange} />
                 </div>
-
                 <div>
-                  <label className="block text-sm font-medium text-gray-700"># E1080/1180 — <span className="font-bold text-indigo-600">{form.e1080}</span></label>
-                  <input name="e1080" type="range" min="0" max="10" step="1" value={form.e1080} onChange={handleChange} className="mt-3 w-full" />
+                  <label style={styles.fieldLabel}># E1080/1180 — <span style={styles.fieldValue}>{form.e1080}</span></label>
+                  <input name="e1080" type="range" min="0" max="10" step="1" value={form.e1080} onChange={handleChange} />
                 </div>
-
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">LPAR Count — <span className="font-bold text-indigo-600">{form.lpars}</span></label>
-                  <input name="lpars" type="range" min="0" max="200" step="1" value={form.lpars} onChange={handleChange} className="mt-3 w-full" />
+                  <label style={styles.fieldLabel}>LPAR Count — <span style={styles.fieldValue}>{form.lpars}</span></label>
+                  <input name="lpars" type="range" min="0" max="200" step="1" value={form.lpars} onChange={handleChange} />
                 </div>
               </div>
 
-              <div className="flex justify-end">
-                <button onClick={generateTimeline} className="px-6 py-2 bg-indigo-600 text-white rounded-md">Next</button>
+              <div style={styles.buttonRow}>
+                <button onClick={generateTimeline} style={styles.buttonPrimary}>Next</button>
               </div>
             </div>
           )}
 
           {step === 3 && timeline && (
-            <div className="space-y-10">
-              <h2 className="text-2xl font-semibold mb-10">Timeline Result</h2>
+            <div>
+              <h2 style={styles.resultTitle}>Timeline Result</h2>
 
-              <div className="relative w-full flex justify-between items-center px-6" style={{ marginTop: '80px' }}>
-                <div className="absolute left-0 right-0 h-6 bg-gradient-to-r from-yellow-400 via-orange-400 via-purple-500 to-blue-900 rounded-full"></div>
+              <div style={{ position: 'relative', width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0 24px', marginTop: '80px' }}>
+                <div style={{ position: 'absolute', left: 0, right: 0, height: '24px', background: 'linear-gradient(to right, #facc15, #f97316, #a855f7, #1e3a8a)', borderRadius: '9999px' }}></div>
 
                 {[
-                  { label: 'PO Received', date: fmt(timeline.po), color: 'bg-gradient-to-br from-yellow-300 to-yellow-500' },
-                  { label: 'Build / Ship', date: fmt(timeline.buildShip), color: 'bg-gradient-to-br from-orange-300 to-orange-600' },
-                  { label: 'Installation', date: fmt(timeline.install), color: 'bg-gradient-to-br from-purple-300 to-purple-600' },
-                  { label: 'End of Migration', date: fmt(timeline.endMigration), color: 'bg-gradient-to-br from-blue-400 to-blue-900' }
+                  { label: 'PO Received', date: fmt(timeline.po), gradient: 'linear-gradient(to bottom right, #fde047, #eab308)' },
+                  { label: 'Build / Ship', date: fmt(timeline.buildShip), gradient: 'linear-gradient(to bottom right, #fdba74, #ea580c)' },
+                  { label: 'Installation', date: fmt(timeline.install), gradient: 'linear-gradient(to bottom right, #c084fc, #9333ea)' },
+                  { label: 'End of Migration', date: fmt(timeline.endMigration), gradient: 'linear-gradient(to bottom right, #60a5fa, #1e3a8a)' }
                 ].map((item, i) => (
-                  <div key={i} className="relative z-10 flex flex-col items-center text-center" style={{ transform: 'translateY(-40px)' }}>
-                    <div className="w-32 h-32 rounded-full bg-white shadow-xl flex items-center justify-center border-4 border-gray-200">
-                      <div className={`w-24 h-24 rounded-full flex items-center justify-center text-white font-bold text-sm ${item.color}`}>
+                  <div key={i} style={{ position: 'relative', zIndex: 10, display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', transform: 'translateY(-40px)' }}>
+                    <div style={{ width: '128px', height: '128px', borderRadius: '50%', backgroundColor: 'white', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '4px solid #e5e7eb' }}>
+                      <div style={{ width: '96px', height: '96px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: '700', fontSize: '14px', background: item.gradient }}>
                         {item.date}
                       </div>
                     </div>
-                    <p className="mt-4 text-gray-700 font-semibold text-sm">{item.label}</p>
+                    <p style={{ marginTop: '16px', color: '#374151', fontWeight: '600', fontSize: '14px' }}>{item.label}</p>
                   </div>
                 ))}
               </div>
 
-              <div className="flex justify-between mt-10">
-                <button onClick={() => setStep(1)} className="px-6 py-2 border rounded-md">Back</button>
-                <div className="flex items-center space-x-3">
-                  <button onClick={() => { setStep(1); setTimeline(null); }} className="px-6 py-2 border rounded-md">Start Over</button>
-                  <button onClick={downloadPPT} className="px-6 py-2 bg-indigo-600 text-white rounded-md">Download PPT</button>
+              <div style={styles.resultButtonRow}>
+                <button onClick={() => setStep(1)} style={styles.buttonSecondary}>Back</button>
+                <div style={{ display: 'flex', gap: '12px' }}>
+                  <button onClick={() => { setStep(1); setTimeline(null); }} style={styles.buttonSecondary}>Start Over</button>
+                  <button onClick={downloadPPT} style={styles.buttonPrimary}>Download PPT</button>
                 </div>
               </div>
             </div>
           )}
-
         </div>
       </div>
     </div>
