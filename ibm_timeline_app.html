@@ -224,34 +224,34 @@ function IBMWizard(){
     }
     
     // Vertical lines going DOWN from dots 1 and 3 (PO Received, Installation)
-    drawVerticalDottedLine(dot1X, dotY + dotSize/2, 3.9);
-    drawVerticalDottedLine(dot3X, dotY + dotSize/2, 3.9);
+    drawVerticalDottedLine(dot1X, dotY + dotSize/2, 3.7);
+    drawVerticalDottedLine(dot3X, dotY + dotSize/2, 3.7);
     
     // Vertical lines going UP from dots 2 and 4 (Build/Ship, End of Migration)
-    drawVerticalDottedLine(dot2X, dotY - dotSize/2, 2.1);
-    drawVerticalDottedLine(dot4X, dotY - dotSize/2, 2.1);
+    drawVerticalDottedLine(dot2X, dotY - dotSize/2, 2.2);
+    drawVerticalDottedLine(dot4X, dotY - dotSize/2, 2.2);
     
     // TOP LABELS (Build/Ship and End of Migration) - dates above, labels below
     // Build/Ship
     slide.addText(fmt(timeline.buildShip), {
-      x: dot2X - 1.0, y: 1.15, w: 2.0, h: 0.4,
+      x: dot2X - 1.0, y: 1.55, w: 2.0, h: 0.4,
       fontSize: 18, bold: true, color: "000000",
       align: "center", fontFace: "Arial"
     });
     slide.addText("Build / Ship", {
-      x: dot2X - 1.0, y: 1.5, w: 2.0, h: 0.3,
+      x: dot2X - 1.0, y: 1.83, w: 2.0, h: 0.3,
       fontSize: 12, bold: true, color: "000000",
       align: "center", fontFace: "Arial"
     });
     
     // End of Migration
     slide.addText(fmt(timeline.endMigration), {
-      x: dot4X - 1.0, y: 1.15, w: 2.0, h: 0.4,
+      x: dot4X - 1.0, y: 1.55, w: 2.0, h: 0.4,
       fontSize: 18, bold: true, color: "000000",
       align: "center", fontFace: "Arial"
     });
     slide.addText("End of Migration", {
-      x: dot4X - 1.0, y: 1.5, w: 2.0, h: 0.3,
+      x: dot4X - 1.0, y: 1.83, w: 2.0, h: 0.3,
       fontSize: 12, bold: true, color: "000000",
       align: "center", fontFace: "Arial"
     });
@@ -259,24 +259,24 @@ function IBMWizard(){
     // BOTTOM LABELS (PO Received and Installation) - dates above, labels below
     // PO Received
     slide.addText(fmt(timeline.po), {
-      x: dot1X - 1.0, y: 4.0, w: 2.0, h: 0.4,
+      x: dot1X - 1.0, y: 3.85, w: 2.0, h: 0.4,
       fontSize: 18, bold: true, color: "000000",
       align: "center", fontFace: "Arial"
     });
     slide.addText("PO Received", {
-      x: dot1X - 1.0, y: 4.35, w: 2.0, h: 0.3,
+      x: dot1X - 1.0, y: 4.13, w: 2.0, h: 0.3,
       fontSize: 12, bold: true, color: "000000",
       align: "center", fontFace: "Arial"
     });
     
     // Installation
     slide.addText(fmt(timeline.install), {
-      x: dot3X - 1.0, y: 4.0, w: 2.0, h: 0.4,
+      x: dot3X - 1.0, y: 3.85, w: 2.0, h: 0.4,
       fontSize: 18, bold: true, color: "000000",
       align: "center", fontFace: "Arial"
     });
     slide.addText("Installation", {
-      x: dot3X - 1.0, y: 4.35, w: 2.0, h: 0.3,
+      x: dot3X - 1.0, y: 4.13, w: 2.0, h: 0.3,
       fontSize: 12, bold: true, color: "000000",
       align: "center", fontFace: "Arial"
     });
