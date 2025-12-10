@@ -263,7 +263,7 @@ const downloadPPT = async () => {
                 finalArray.push({ text: text, options: { color: black } });
                 // Use a single newline for formatting between list items
                 if (textArray.length > 1 && textArray.indexOf(text) < textArray.length - 1) {
-                    finalArray.push({ text: "\\n\\n", options: { breakLine: true } }); 
+                    finalArray.push({ text: "", options: { breakLine: true } }); 
                 }
             });
             slide.addText(finalArray, { x: x, y: y, w: colW, h: 1.8, fontSize: 14, fontFace: "IBM Plex Sans Light", valign: "top", align: "left" });
@@ -303,7 +303,6 @@ const downloadPPT = async () => {
 
         endMigration: [
             "Data migration and LPAR testing completed.",
- "",  // <--- Adds a blank line/space here
             "All old servers have been replaced."
         ]
     };
