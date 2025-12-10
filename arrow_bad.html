@@ -296,14 +296,13 @@ const downloadPPT = async () => {
         ],
  
 "install": [
-    "Power and network readiness in the data center enables fast deployment; IBM SSR installs racks.",
+    "Power and network readiness in the data center enables fast deployment; IBM SSR installs racks."
 
-    "Creation of LPARs and Virtual I/O Servers."
 ],
 
         endMigration: [
             "Data migration and LPAR testing completed.",
-            "All old servers have been replaced."
+            "Creation of LPARs and Virtual I/O Servers."
         ]
     };
     
@@ -323,8 +322,8 @@ const downloadPPT = async () => {
             "Build/ship date is based on the PO receipt date, with delivery expected in about 3 weeks for Scale-out Servers and 4 weeks for Enterprise Servers."
         ],
         install: [
-    "Power and network readiness in the data center enables fast deployment; IBM SSR installs racks.",
-    "Creation of LPARs and Virtual I/O Servers."
+    "The installation date is calculated by taking the build/ship date and adding an additional time allowance based on the number of servers included in the order.",
+    "Delays related to power and network in the client’s data center are not factored in."
 ],
         endMigration: [
             "Migration completion was based on LPAR workload and IT team commitment. More LPARs and lower commitment extended the timeline."
@@ -389,20 +388,21 @@ const downloadPPT = async () => {
                     <input name="endMigrationDate" type="date" value={form.endMigrationDate} onChange={handleChange} />
                   </div>
                 )}
+
                 <div>
-                  <label style={styles.fieldLabel}># S1022/1122 — <span style={styles.fieldValue}>{form.s1022}</span></label>
+                  <label style={styles.fieldLabel}>Number of S1022/1122 — <span style={styles.fieldValue}>{form.s1022}</span></label>
                   <input name="s1022" type="range" min="0" max="25" step="1" value={form.s1022} onChange={handleChange} />
                 </div>
                 <div>
-                  <label style={styles.fieldLabel}># S1024/1124 — <span style={styles.fieldValue}>{form.s1024}</span></label>
+                  <label style={styles.fieldLabel}>Number of S1024/1124 — <span style={styles.fieldValue}>{form.s1024}</span></label>
                   <input name="s1024" type="range" min="0" max="25" step="1" value={form.s1024} onChange={handleChange} />
                 </div>
                 <div>
-                  <label style={styles.fieldLabel}># E1050/1150 — <span style={styles.fieldValue}>{form.e1050}</span></label>
+                  <label style={styles.fieldLabel}>Number of E1050/1150 — <span style={styles.fieldValue}>{form.e1050}</span></label>
                   <input name="e1050" type="range" min="0" max="20" step="1" value={form.e1050} onChange={handleChange} />
                 </div>
                 <div>
-                  <label style={styles.fieldLabel}># E1080/1180 — <span style={styles.fieldValue}>{form.e1080}</span></label>
+                  <label style={styles.fieldLabel}>Number of E1080/1180 — <span style={styles.fieldValue}>{form.e1080}</span></label>
                   <input name="e1080" type="range" min="0" max="10" step="1" value={form.e1080} onChange={handleChange} />
                 </div>
                 <div>
