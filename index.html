@@ -138,8 +138,8 @@ function IBMWizard(){
     // Rule: 5 days base + 1 day for every 12 LPARs
     const baseMigrationDays = 5 + Math.floor((form.lpars || 0) / 12);
 
-    // 3. APPLY COMMITMENT LOGIC HERE
-    // If commitment is 50%, it takes twice as long. (Days / 0.5)
+    // 3. APPLY AVAILABILITY (Previously Commitment) LOGIC HERE
+    // If availability is 50%, it takes twice as long. (Days / 0.5)
     // We use Math.max(1, ...) to ensure we don't divide by zero or get weird results.
     const commitmentFactor = (form.commitment || 100) / 100; 
     const adjustedMigrationDays = Math.ceil(baseMigrationDays / commitmentFactor);
@@ -277,7 +277,7 @@ const downloadPPT = async () => {
     };
 
     const pptx = new Pctor();
-    pptx.layout = "LAYOUT_WIDE"; 
+    pptx.layout = "LAYOUT_WIDE";
     
     // Use the client name from the form, or fallback to the placeholder
     const clientDisplay = form.clientName ? `${form.clientName}` : "<Client Name>";
@@ -290,20 +290,17 @@ const downloadPPT = async () => {
     
     const slide1Bullets = {
         po: [
-            "IBM Manufacturing is Make-to-Order; production starts only after PO."
+            "IBM Manufacturing is Make-to-Order; server build starts only after PO."
         ],
         buildShip: [
             "Delivery is expected within 3–4 weeks of PO, with timing influenced by server model selection."
-        ],
- 
-"install": [
+        ], "install": [
     "Power and network readiness in the data center enables fast deployment; IBM SSR installs racks."
 
 ],
-
         endMigration: [
-            "Data migration and LPAR testing completed.",
-            "Creation of LPARs and Virtual I/O Servers."
+            "Creation of LPARs and Virtual I/O Servers.",
+            "Data migration and LPAR testing completed."
         ]
     };
     
@@ -324,10 +321,9 @@ const downloadPPT = async () => {
         ],
         install: [
     "The installation date is calculated by taking the build/ship date and adding an additional time allowance based on the number of servers included in the order.",
-    "Delays related to power and network in the client’s data center are not factored in."
-],
+    "Delays related to power and network in the client’s data center are not factored in."],
         endMigration: [
-            "Migration completion was based on LPAR workload and IT team commitment. More LPARs and lower commitment extended the timeline."
+            "Migration completion was based on LPAR workload and IT team availability. More LPARs and lower availability extended the timeline."
         ]
     };
     
@@ -336,6 +332,7 @@ const downloadPPT = async () => {
     // Write the file
     await pptx.writeFile({ fileName: `IBM_Power_Timeline${form.clientName ? '_' + form.clientName.replace(/[^a-z0-9]/gi, '_') : ''}.pptx` });
   };
+
   const styles = {
     container: { minHeight: '100vh', backgroundColor: '#f9fafb', display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: '32px' },
     card: { width: '100%', maxWidth: '896px', backgroundColor: 'white', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)', borderRadius: '16px', overflow: 'hidden' },
@@ -389,6 +386,7 @@ const downloadPPT = async () => {
                   <span>End of Migration Date</span>
                 </label>
               </div>
+
               <div style={styles.grid}>
                 {mode === 'po' && (
                   <div>
@@ -423,8 +421,9 @@ const downloadPPT = async () => {
                   <label style={styles.fieldLabel}>LPAR Count — <span style={styles.fieldValue}>{form.lpars}</span></label>
                   <input name="lpars" type="range" min="0" max="200" step="1" value={form.lpars} onChange={handleChange} />
                 </div>
+
                 <div>
-                  <label style={styles.fieldLabel}>IT Team Commitment Level</label>
+                  <label style={styles.fieldLabel}>IT Team Availability</label>
                   <div style={{ display: 'flex', gap: '16px', marginTop: '8px' }}>
                     {[25, 50, 75, 100].map(pct => (
                       <label key={pct} style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontSize: '14px', color: '#374151' }}>
